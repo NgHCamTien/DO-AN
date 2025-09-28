@@ -1,0 +1,80 @@
+[{
+  "_id": {
+    "$oid": "6841835d1c84daf4d98ff6c0"
+  },
+  "name": "Hoa cưới",
+  "slug": "hoa-ci",
+  "description": "Hoa dành cho ngày cưới",
+  "image": "",
+  "createdAt": {
+    "$date": "2025-06-05T11:45:33.631Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-05T11:45:33.631Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6841da27ba310e3cff61b926"
+  },
+  "name": "Hoa sinh nhật",
+  "slug": "hoa-sinh-nht",
+  "description": "Dành cho sinh nhật",
+  "image": "",
+  "createdAt": {
+    "$date": "2025-06-05T17:55:51.254Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-05T17:55:51.254Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684a2d3dbac08b7552f29c0e"
+  },
+  "name": "Hoa khai trương",
+  "slug": "hoa-khai-trng",
+  "description": "Dành cho việc khai trương",
+  "image": "",
+  "createdAt": {
+    "$date": "2025-06-12T01:28:29.183Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T01:28:29.183Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684a2d59bac08b7552f29c13"
+  },
+  "name": "Hoa ngày lễ",
+  "slug": "hoa-ngy-l",
+  "description": "Dành cho dịp lễ",
+  "image": "",
+  "createdAt": {
+    "$date": "2025-06-12T01:28:57.755Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T01:28:57.755Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684a2d7abac08b7552f29c18"
+  },
+  "name": "Cây văn phòng",
+  "slug": "cy-vn-phng",
+  "description": "Trang trí",
+  "image": "",
+  "createdAt": {
+    "$date": "2025-06-12T01:29:30.983Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T01:29:30.983Z"
+  },
+  "__v": 0
+}]

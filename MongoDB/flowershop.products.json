@@ -1,0 +1,288 @@
+[{
+  "_id": {
+    "$oid": "68492764d8b04cd40cf2b57e"
+  },
+  "name": "Hoa hồng",
+  "description": "Hoa cho ngày cưới",
+  "price": 450000,
+  "discountPrice": 400000,
+  "images": [
+    "/uploads/1749624676772.jpg"
+  ],
+  "category": {
+    "$oid": "6841835d1c84daf4d98ff6c0"
+  },
+  "isFeatured": false,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-11T06:51:16.790Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-11T06:51:16.790Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684927c4d8b04cd40cf2b5ca"
+  },
+  "name": "Hoa cúc",
+  "description": "Hoa tặng sinh nhật",
+  "price": 300000,
+  "discountPrice": null,
+  "images": [
+    "/uploads/1749624772747.jpeg"
+  ],
+  "category": {
+    "$oid": "6841da27ba310e3cff61b926"
+  },
+  "isFeatured": true,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-11T06:52:52.751Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-11T06:52:52.751Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684a2d09bac08b7552f29bf6"
+  },
+  "name": "Hoa hồng ",
+  "description": "Hoa sinh nhật",
+  "price": 300000,
+  "discountPrice": null,
+  "images": [
+    "/uploads/1749691656997.jpg"
+  ],
+  "category": {
+    "$oid": "6841da27ba310e3cff61b926"
+  },
+  "isFeatured": true,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T01:27:37.020Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T01:27:37.020Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684a2dcebac08b7552f29c25"
+  },
+  "name": "Cánh cửa hy vọng",
+  "description": "Cho ngày khai trương",
+  "price": 1500000,
+  "discountPrice": 1350000,
+  "images": [
+    "/uploads/1749691854220.png"
+  ],
+  "category": {
+    "$oid": "684a2d3dbac08b7552f29c0e"
+  },
+  "isFeatured": true,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T01:30:54.233Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T01:30:54.233Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684a2e33bac08b7552f29c31"
+  },
+  "name": "Dẫn lối thành công",
+  "description": "Sản phẩm bao gồm:\r\n\r\nhoa hồng vàng\r\nHoa đồng tiền vàng\r\nHoa phi yến vàng\r\nHo lan mokara vàng\r\nNơ lá và phụ liệu đi kèm",
+  "price": 1200000,
+  "discountPrice": null,
+  "images": [
+    "/uploads/1749691955444.png"
+  ],
+  "category": {
+    "$oid": "684a2d3dbac08b7552f29c0e"
+  },
+  "isFeatured": false,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T01:32:35.453Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T01:32:35.453Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684ae46f8193ccb6d30a1bdf"
+  },
+  "name": "Cây phong cảnh",
+  "description": "Cây Thiết Mộc Lan",
+  "price": 300000,
+  "discountPrice": null,
+  "images": [
+    "/uploads/1749738607628.webp"
+  ],
+  "category": {
+    "$oid": "684a2d7abac08b7552f29c18"
+  },
+  "isFeatured": false,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T14:30:07.640Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T14:30:07.640Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684ae4968193ccb6d30a1beb"
+  },
+  "name": "Cây Kim Tiền",
+  "description": "Cây trang trí ",
+  "price": 350000,
+  "discountPrice": 300000,
+  "images": [
+    "/uploads/1749738690845.webp"
+  ],
+  "category": {
+    "$oid": "684a2d7abac08b7552f29c18"
+  },
+  "isFeatured": true,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T14:30:46.448Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T14:31:30.852Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "684ae4eb8193ccb6d30a1c0f"
+  },
+  "name": "Cây Phú Quý",
+  "description": "Cây cảnh văn phòng vô cùng phổ biến hiện nay",
+  "price": 400000,
+  "discountPrice": null,
+  "images": [
+    "/uploads/1749738731945.webp"
+  ],
+  "category": {
+    "$oid": "684a2d7abac08b7552f29c18"
+  },
+  "isFeatured": false,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T14:32:11.953Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T14:32:11.953Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684ae5bc8193ccb6d30a1c81"
+  },
+  "name": "Hoa ngày lễ tình nhân",
+  "description": "Phụ kiện:  Cỏ điểm, chuỗi ngọc, giấy gói hoa, nơ",
+  "price": 450000,
+  "discountPrice": null,
+  "images": [
+    "/uploads/1749738940871.webp"
+  ],
+  "category": {
+    "$oid": "684a2d59bac08b7552f29c13"
+  },
+  "isFeatured": false,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T14:35:40.878Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T14:35:40.878Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684ae61a8193ccb6d30a1c8d"
+  },
+  "name": "Hoa ngày lễ tình nhân",
+  "description": "Hoa hồng đỏ hình trái tim",
+  "price": 450000,
+  "discountPrice": null,
+  "images": [
+    "/uploads/1749739034514.jpg"
+  ],
+  "category": {
+    "$oid": "684a2d59bac08b7552f29c13"
+  },
+  "isFeatured": true,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T14:37:14.519Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T14:37:14.519Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684ae6668193ccb6d30a1c99"
+  },
+  "name": "oa hướng dương tốt nghiệp",
+  "description": "Bó Hoa Hướng Dương  tốt nghiệp – Nắng hè",
+  "price": 500000,
+  "discountPrice": 400000,
+  "images": [
+    "/uploads/1749739110483.webp"
+  ],
+  "category": {
+    "$oid": "684a2d59bac08b7552f29c13"
+  },
+  "isFeatured": true,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T14:38:30.489Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T15:37:20.373Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684ae6cc8193ccb6d30a1cb5"
+  },
+  "name": "Hoa Sen hồng",
+  "description": "Bó Hoa Sen hồng – Hồng Hạ ",
+  "price": 600000,
+  "discountPrice": 450000,
+  "images": [
+    "/uploads/1749739212160.webp"
+  ],
+  "category": {
+    "$oid": "6841da27ba310e3cff61b926"
+  },
+  "isFeatured": true,
+  "rating": 5,
+  "createdAt": {
+    "$date": "2025-06-12T14:40:12.164Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T15:31:24.900Z"
+  },
+  "__v": 0
+}]

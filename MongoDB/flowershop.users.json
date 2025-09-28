@@ -1,0 +1,78 @@
+[{
+  "_id": {
+    "$oid": "682ec25087d46edda1b6337a"
+  },
+  "name": "Admin",
+  "email": "cphoang07@gmail.com",
+  "password": "$2a$10$JRoJdUgdiZjfK81CU9urr.PwrRZZTXP6HMlOrCrE.xUGui1OiiRuu",
+  "role": "admin",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-05-22T06:21:04.592Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T15:36:32.760Z"
+  },
+  "emailVerified": false,
+  "lastLoginDate": {
+    "$date": "2025-06-12T15:36:32.758Z"
+  },
+  "preferences": {
+    "receiveNewsletter": true,
+    "receiveOrderUpdates": true,
+    "receivePromotions": true
+  },
+  "registrationDate": {
+    "$date": "2025-06-05T17:15:50.953Z"
+  },
+  "subscribedToNewsletter": true,
+  "address": "",
+  "phone": ""
+},
+{
+  "_id": {
+    "$oid": "684183e01c84daf4d98ff6e0"
+  },
+  "name": "Vi",
+  "email": "cphoang13@gmail.com",
+  "password": "$2a$10$3k7Qmt.iu73/z5v8s2l3HOFQzmhErTugfo5o3PdjdvI8hEjUCE9lO",
+  "role": "user",
+  "createdAt": {
+    "$date": "2025-06-05T11:47:44.379Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-05T11:47:44.379Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6842533c51c190c8803132e6"
+  },
+  "name": "Mai Ki",
+  "email": "raica@gmail.com",
+  "password": "$2a$10$C1bmyn./1tnWtFKtCkWvtu7VeZaXZipl1/dqWfvO1Cnr8h4Ycz/q6",
+  "phone": "0909817134",
+  "address": "duong abc phuong dxc",
+  "role": "user",
+  "subscribedToNewsletter": true,
+  "emailVerified": false,
+  "preferences": {
+    "receivePromotions": true,
+    "receiveOrderUpdates": true,
+    "receiveNewsletter": true
+  },
+  "registrationDate": {
+    "$date": "2025-06-06T02:32:28.448Z"
+  },
+  "createdAt": {
+    "$date": "2025-06-06T02:32:28.455Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T15:39:49.774Z"
+  },
+  "__v": 0,
+  "lastLoginDate": {
+    "$date": "2025-06-12T15:39:49.771Z"
+  }
+}]
