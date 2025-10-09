@@ -6,9 +6,9 @@ const Sidebar = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { slug } = useParams(); // Để highlight category hiện tại
+  const { slug } = useParams(); // highlight category hiện tại
 
-  // Hardcode categories làm fallback
+  // Hardcode fallback
   const fallbackCategories = [
     { _id: '1', name: 'Khuyến mãi gốc', slug: 'khuyen-mai-goc' },
     { _id: '2', name: 'Hoa cảm ơn', slug: 'hoa-cam-on' },
@@ -30,21 +30,15 @@ const Sidebar = () => {
     try {
       console.log('Sidebar: Fetching categories...');
       const response = await categoryAPI.getCategories();
-      console.log('Sidebar: Categories response:', response.data);
-      
       if (response.data && Array.isArray(response.data)) {
         setCategories(response.data);
       } else {
-        console.warn('Sidebar: Invalid categories data, using fallback');
         setCategories(fallbackCategories);
       }
-      
       setLoading(false);
     } catch (error) {
       console.error('Sidebar: Error fetching categories:', error);
       setError('Không thể tải danh mục');
-      
-      // Sử dụng fallback categories nếu API lỗi
       setCategories(fallbackCategories);
       setLoading(false);
     }
@@ -52,7 +46,7 @@ const Sidebar = () => {
 
   if (loading) {
     return (
-      <aside className="sidebar bg-white p-3 max-w-xs ml-5 mt-4">
+      <aside className="sidebar bg-white p-4 max-w-xs ml-5 mt-4 shadow rounded border">
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-green-700 mx-auto mb-2"></div>
           <p className="text-sm text-gray-600">Đang tải danh mục...</p>
@@ -62,15 +56,17 @@ const Sidebar = () => {
   }
 
   return (
-    <aside className="sidebar bg-white p-3 max-w-xs ml-5 mt-4">
-      <h3 className="font-bold text-lg mb-4 text-red-500">Khuyến mãi góc</h3>
-      
+    <aside className="sidebar bg-white p-4 max-w-xs ml-5 mt-4 shadow rounded border border-gray-200">
+      <h3 className="font-bold text-lg mb-4 text-green-700 border-b pb-2">
+        Danh mục sản phẩm
+      </h3>
+
       {error && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-2 rounded mb-4 text-sm">
           <p>{error}</p>
           <button 
             onClick={fetchCategories}
-            className="text-blue-600 hover:text-blue-800 underline text-xs mt-1"
+            className="text-green-700 hover:text-green-900 underline text-xs mt-1"
           >
             Thử lại
           </button>
@@ -81,9 +77,10 @@ const Sidebar = () => {
         {categories.map((category) => (
           <li 
             key={category._id || category.id}
-            className={`py-4 px-4 border-b border-gray-200 bg-gray-100 cursor-pointer transition-all duration-300 hover:bg-gray-200 ${
-              slug === category.slug ? 'text-red-600 font-bold bg-red-50' : 'text-green-700'
-            }`}
+            className={`py-3 px-4 border-b border-gray-200 cursor-pointer transition-all duration-200 
+              ${slug === category.slug 
+                ? 'text-green-800 font-semibold bg-green-100' 
+                : 'text-gray-700 hover:bg-green-50 hover:text-green-700'}`}
           >
             <Link 
               to={`/category/${category.slug}`}
@@ -94,14 +91,6 @@ const Sidebar = () => {
           </li>
         ))}
       </ul>
-      
-      {/* Debug info - sẽ ẩn trong production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
-          <p>Debug: {categories.length} categories loaded</p>
-          <p>Current slug: {slug || 'none'}</p>
-        </div>
-      )}
     </aside>
   );
 };

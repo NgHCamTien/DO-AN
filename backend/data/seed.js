@@ -16,7 +16,7 @@ connectDB();
 const users = [
   {
     name: 'Admin',
-    email: 'cphoang07@gmail.com',
+    email: 'nguyenhongcamtien694@gmail.com',
     password: '123456', // Sẽ được mã hóa bởi schema pre-save hook
     role: 'admin'
   },

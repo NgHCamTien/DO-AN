@@ -1,5 +1,6 @@
 const Category = require('../models/Category');
 const Product = require('../models/Product');
+const slugify = require('slugify');
 
 // Lấy tất cả danh mục
 const getCategories = async (req, res) => {
@@ -60,27 +61,30 @@ const getProductsByCategory = async (req, res) => {
 // Thêm danh mục mới (Admin)
 const createCategory = async (req, res) => {
   try {
-    const { name, slug, description } = req.body;
-    
+    const { name, description } = req.body;
+
+    // Tạo slug từ name (SEO + tiếng Việt)
+    const slug = slugify(name, { lower: true, locale: 'vi' });
+
     // Kiểm tra slug có trùng không
     const existingCategory = await Category.findOne({ slug });
     if (existingCategory) {
       return res.status(400).json({ message: 'Slug đã tồn tại' });
     }
-    
+
     // Lưu đường dẫn hình ảnh nếu có
     let image = '';
     if (req.file) {
       image = `/uploads/${req.file.filename}`;
     }
-    
+
     const category = new Category({
       name,
       slug,
       description,
       image
     });
-    
+
     const createdCategory = await category.save();
     res.status(201).json(createdCategory);
   } catch (error) {
@@ -91,28 +95,24 @@ const createCategory = async (req, res) => {
 // Cập nhật danh mục (Admin)
 const updateCategory = async (req, res) => {
   try {
-    const { name, slug, description } = req.body;
-    
+    const { name, description } = req.body;
+
     const category = await Category.findById(req.params.id);
-    
+
     if (category) {
-      // Kiểm tra slug có trùng không (nếu thay đổi)
-      if (slug && slug !== category.slug) {
-        const existingCategory = await Category.findOne({ slug });
-        if (existingCategory) {
-          return res.status(400).json({ message: 'Slug đã tồn tại' });
-        }
-        category.slug = slug;
+      if (name) {
+        category.name = name;
+        category.slug = slugify(name, { lower: true, locale: 'vi' });
       }
-      
-      category.name = name || category.name;
-      category.description = description || category.description;
-      
+      if (description) {
+        category.description = description;
+      }
+
       // Cập nhật hình ảnh nếu có
       if (req.file) {
         category.image = `/uploads/${req.file.filename}`;
       }
-      
+
       const updatedCategory = await category.save();
       res.json(updatedCategory);
     } else {
@@ -127,17 +127,17 @@ const updateCategory = async (req, res) => {
 const deleteCategory = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
-    
+
     if (category) {
       // Kiểm tra xem có sản phẩm nào thuộc danh mục này không
       const productsCount = await Product.countDocuments({ category: category._id });
-      
+
       if (productsCount > 0) {
-        return res.status(400).json({ 
-          message: 'Không thể xóa danh mục này vì có sản phẩm liên quan' 
+        return res.status(400).json({
+          message: 'Không thể xóa danh mục này vì có sản phẩm liên quan'
         });
       }
-      
+
       await category.remove();
       res.json({ message: 'Đã xóa danh mục' });
     } else {

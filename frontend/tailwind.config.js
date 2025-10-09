@@ -4,13 +4,18 @@ module.exports = {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-    extend: {
-      colors: {
-        'primary': '#0A5C36',
-        'secondary': '#448213',
-        'accent': '#66bb33',
-      },
-    },
+   extend: {
+  colors: {
+    primary: '#e75480', // hồng pastel (nút, accent)
+    secondary: '#f9f5f1', // nền be nhạt
+    dark: '#2c2c2c', // chữ đen sang trọng
+  },
+  fontFamily: {
+    serif: ['Playfair Display', 'serif'],
+    sans: ['Lato', 'sans-serif'],
+  },
+}
+
   },
   plugins: [],
 }

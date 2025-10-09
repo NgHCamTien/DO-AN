@@ -2,17 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Reset cơ bản */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  @apply font-sans bg-gray-50 text-gray-900;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8f9fa;
 }
 
+/* Code blocks */
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* 🎨 Bảng màu DDT Flower */
+:root {
+  --primary: #e06c7f;   /* hồng đất */
+  --secondary: #faf8f6; /* nền kem */
+  --accent: #8b5e3c;    /* nâu gỗ */
+  --dark: #333;
+  --light: #fff;
+}
+
+/* Biến màu để Tailwind hiểu và áp dụng dễ hơn */
+.bg-primary { background-color: var(--primary); }
+.bg-secondary { background-color: var(--secondary); }
+.bg-accent { background-color: var(--accent); }
+
+.text-primary { color: var(--primary); }
+.text-accent { color: var(--accent); }
+.text-light { color: var(--light); }
+.text-dark { color: var(--dark); }
+
+.hover\:bg-primary:hover { background-color: var(--primary); }
+.hover\:text-primary:hover { color: var(--primary); }
+
+.border-primary { border-color: var(--primary); }
+.border-accent { border-color: var(--accent); }
+
+.shadow-soft { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); }
+
+/* Nút kiểu DDT Flower */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--light);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent);
 }

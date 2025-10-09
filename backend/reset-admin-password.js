@@ -24,7 +24,7 @@ const User = mongoose.model('User', userSchema);
 const resetAdminPassword = async () => {
   try {
     // Find admin user
-    const admin = await User.findOne({ email: 'cphoang07@gmail.com' });
+    const admin = await User.findOne({ email: 'nguyenhongcamtien694@gmail.com' });
     
     if (!admin) {
       console.log('Admin user not found!');
@@ -42,7 +42,7 @@ const resetAdminPassword = async () => {
     await admin.save();
 
     console.log('Admin password has been reset successfully!');
-    console.log('Email: cphoang07@gmail.com');
+    console.log('Email: nguyenhongcamtien694@gmail.com');
     console.log('New Password: 123456');
     
     // Test the new password
