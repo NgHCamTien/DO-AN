@@ -1,287 +1,427 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useContext } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import Select from 'react-select';
+
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const AddProduct = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    discountPrice: '',
-    categoryId: '',
-    // BỎ TRƯỜNG quantity
-    isFeatured: false
-  });
-  const [images, setImages] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { user, logout } = useContext(AuthContext || {});
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
+  // Các state sản phẩm
+  const [sku, setSku] = useState('');
+  const [name, setName] = useState('');
+  const [shortDescription, setShortDescription] = useState('');
+  const [flowerTypes, setFlowerTypes] = useState([]);
+  const [season, setSeason] = useState('Quanh năm');
+  const [categoryId, setCategoryId] = useState('');
+  const [price, setPrice] = useState('');
+  const [discountPrice, setDiscountPrice] = useState('');
+  const [discountStartDate, setDiscountStartDate] = useState('');
+  const [discountEndDate, setDiscountEndDate] = useState('');
+  const [stock, setStock] = useState(0);
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [tagsInput, setTagsInput] = useState('');
+  const [tags, setTags] = useState([]);
+  const [description, setDescription] = useState('');
+
+  // Ảnh
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // 🧮 Tính phần trăm giảm
+  const calculateDiscountPercent = () => {
+    const p = Number(price);
+    const d = Number(discountPrice);
+    if (!p || !d || d <= 0 || d >= p) return 0;
+    const percent = ((p - d) / p) * 100;
+    return Math.min(Math.round(percent), 99);
+  };
+  const discountPercent = calculateDiscountPercent();
+
+  // 🟢 Lấy danh mục
   useEffect(() => {
-    fetchCategories();
+    const fetchCats = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/categories`);
+        const cats = Array.isArray(res.data) ? res.data : res.data.categories || [];
+        setCategories(cats);
+        if (cats.length) setCategoryId(cats[0]._id || cats[0].id || '');
+      } catch (err) {
+        console.error('Load categories error', err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    fetchCats();
   }, []);
 
-  const fetchCategories = async () => {
+  // 🟢 Tạo preview ảnh
+  useEffect(() => {
+    if (!files.length) return setPreviews([]);
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [files]);
+
+  // 🟢 Xử lý tag
+  useEffect(() => {
+    const arr = tagsInput.split(',').map((t) => t.trim()).filter((t) => t);
+    setTags(arr);
+  }, [tagsInput]);
+
+  const handleFilesChange = (e) => {
+    const selected = Array.from(e.target.files);
+    if (selected.length + files.length > 5) {
+      alert('Tối đa 5 ảnh thôi nhé 🌸');
+      return;
+    }
+    setFiles((prev) => [...prev, ...selected]);
+  };
+
+  const removePreviewAt = (i) => {
+    setFiles((prev) => prev.filter((_, idx) => idx !== i));
+    setPreviews((prev) => prev.filter((_, idx) => idx !== i));
+  };
+
+  const getToken = () => {
     try {
-      const response = await fetch('http://localhost:5000/api/categories');
-      const data = await response.json();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+      return user?.token || JSON.parse(localStorage.getItem('userInfo'))?.token;
+    } catch {
+      return null;
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const handleImageChange = (e) => {
-    setImages(Array.from(e.target.files));
-  };
-
+  // 🟢 Gửi form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
+    if (!name || !categoryId || !price || !description || !sku) {
+      setError('Vui lòng điền đầy đủ các trường có dấu *');
+      return;
+    }
+
+    if (discountStartDate && discountEndDate && discountEndDate < discountStartDate) {
+      setError('Ngày kết thúc khuyến mãi phải sau ngày bắt đầu');
+      return;
+    }
+
+    const p = Number(price);
+    const d = Number(discountPrice);
+    if (d && d >= p) {
+      setError('Giá khuyến mãi phải nhỏ hơn giá gốc');
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      alert('Bạn chưa đăng nhập hoặc phiên hết hạn. Vui lòng đăng nhập lại.');
+      if (logout) logout();
+      return;
+    }
+
     try {
-      const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
-      const formDataToSend = new FormData();
+      setSubmitting(true);
+      let imageUrls = [];
 
-      // Append text fields
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== '') {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
-
-      // Append images
-      images.forEach(image => {
-        formDataToSend.append('images', image);
-      });
-
-      const response = await fetch('http://localhost:5000/api/products', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
-
-      if (response.ok) {
-        alert('Thêm sản phẩm thành công!');
-        navigate('/admin/products');
-      } else {
-        const data = await response.json();
-        setError(data.message || 'Có lỗi xảy ra khi thêm sản phẩm');
+      if (files.length > 0) {
+        const imgForm = new FormData();
+        files.forEach((f) => imgForm.append('images', f));
+        const uploadRes = await axios.post(`${API_URL}/api/upload`, imgForm, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        imageUrls = uploadRes.data.urls || [];
       }
-    } catch (error) {
-      console.error('Error adding product:', error);
-      setError('Lỗi kết nối đến server');
+
+      const productData = {
+        sku,
+        name,
+        shortDescription,
+        description,
+        price: Number(price),
+        discountPrice: discountPrice ? Number(discountPrice) : undefined,
+        discountStartDate: discountStartDate || undefined,
+        discountEndDate: discountEndDate || undefined,
+        categoryId,
+        flowerTypes,
+        season,
+        stock: Number(stock),
+        isFeatured,
+        tags,
+        images: imageUrls,
+      };
+
+      await axios.post(`${API_URL}/api/products`, productData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert('🌸 Thêm sản phẩm thành công!');
+      navigate('/admin/products');
+    } catch (err) {
+      console.error('Upload hoặc thêm sản phẩm lỗi:', err);
+      setError(err?.response?.data?.message || 'Lỗi khi thêm sản phẩm');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Admin Header */}
-      <header className="bg-green-800 text-white py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-xl font-bold">DTP Flower Shop - Quản trị</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <span>{user?.name || 'Admin'}</span>
-          <button 
-            onClick={logout}
-            className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-blue-50 py-10 px-4">
+      <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
+        <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">🌸 Thêm Sản Phẩm Mới</h2>
 
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-md p-4">
-          <nav>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/admin/dashboard" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Tổng quan
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/products" className="block py-2 px-4 rounded bg-green-100 text-green-800 font-medium">
-                  Quản lý sản phẩm
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/orders" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý đơn hàng
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/categories" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý danh mục
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="block py-2 px-4 rounded hover:bg-gray-100 text-blue-700" target="_blank">
-                  Xem trang web
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
+        {error && <div className="mb-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg">{error}</div>}
 
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="mb-6">
-            <Link to="/admin/products" className="text-blue-600 hover:underline">
-              ← Quay lại danh sách sản phẩm
-            </Link>
-            <h2 className="text-2xl font-bold mt-2">Thêm sản phẩm mới</h2>
-          </div>
-
-          {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-              {error}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Mã sản phẩm + Tên sản phẩm */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">Mã sản phẩm *</label>
+              <input
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                placeholder="VD: SP001"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              />
             </div>
-          )}
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tên sản phẩm *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Danh mục *
-                  </label>
-                  <select
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
-                  >
-                    <option value="">Chọn danh mục</option>
-                    {categories.map(category => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Giá gốc (VNĐ) *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Giá khuyến mãi (VNĐ)
-                  </label>
-                  <input
-                    type="number"
-                    name="discountPrice"
-                    value={formData.discountPrice}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                {/* BỎ TRƯỜNG SỐ LƯỢNG */}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hình ảnh
-                  </label>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Có thể chọn nhiều hình ảnh</p>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mô tả *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                ></textarea>
-              </div>
-
-              <div className="mt-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="isFeatured"
-                    checked={formData.isFeatured}
-                    onChange={handleInputChange}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700">Sản phẩm nổi bật</span>
-                </label>
-              </div>
-
-              <div className="mt-6 flex gap-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-600 disabled:opacity-50"
-                >
-                  {loading ? 'Đang thêm...' : 'Thêm sản phẩm'}
-                </button>
-                <Link
-                  to="/admin/products"
-                  className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
-                >
-                  Hủy
-                </Link>
-              </div>
-            </form>
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">Tên sản phẩm *</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              />
+            </div>
           </div>
-        </div>
+
+          {/* Mô tả ngắn */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">Chi tiết sản phẩm</label>
+            <textarea
+              value={shortDescription}
+              onChange={(e) => setShortDescription(e.target.value)}
+              rows="3"
+              placeholder="Mô tả ngắn gọn về sản phẩm..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+            />
+          </div>
+
+          {/* Danh mục + Giá */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">Danh mục *</label>
+              <select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-400 focus:ring focus:ring-blue-100 outline-none transition"
+              >
+                {loadingCategories ? (
+                  <option>Đang tải...</option>
+                ) : (
+                  categories.map((c) => (
+                    <option key={c._id || c.id} value={c._id || c.id}>
+                      {c.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">Giá gốc *</label>
+              <input
+                type="number"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-400 focus:ring focus:ring-green-100 outline-none transition"
+              />
+            </div>
+          </div>
+          {/* 🌸 Loại hoa (1 dòng) */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">Loại hoa</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Select
+                  isMulti
+                  value={flowerTypes.map((f) => ({ value: f, label: f }))}
+                  onChange={(selected) => setFlowerTypes(selected.map((s) => s.value))}
+                  options={[
+                    { value: 'Hoa hồng', label: 'Hoa hồng' },
+                    { value: 'Hoa tulip', label: 'Hoa tulip' },
+                    { value: 'Hoa baby', label: 'Hoa baby' },
+                    { value: 'Hoa hướng dương', label: 'Hoa hướng dương' },
+                    { value: 'Hoa lan', label: 'Hoa lan' },
+                    { value: 'Hoa cúc', label: 'Hoa cúc' },
+                  ]}
+                  placeholder="Chọn hoặc nhập thêm..."
+                  className="text-sm"
+                />
+              </div>
+
+              <input
+                type="text"
+                placeholder="+ Thêm loại mới"
+                className="border border-gray-300 rounded-lg px-2 py-1 w-40 text-sm focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.target.value.trim()) {
+                    e.preventDefault();
+                    const newFlower = e.target.value.trim();
+                    if (!flowerTypes.includes(newFlower)) {
+                      setFlowerTypes([...flowerTypes, newFlower]);
+                    }
+                    e.target.value = "";
+                  }
+                }}
+              />
+            </div>
+            <p className="text-sm text-gray-500 mt-1">🌺 Chọn hoặc nhập loại hoa mới rồi nhấn Enter</p>
+          </div>
+
+          {/* Giá khuyến mãi + thời gian */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">Giá khuyến mãi</label>
+              <input
+                type="number"
+                min="0"
+                value={discountPrice}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDiscountPrice(value);
+                  const p = Number(price);
+                  const d = Number(value);
+                  if (p && d && d >= p) setError('Giá khuyến mãi phải nhỏ hơn giá gốc');
+                  else setError('');
+                }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-400 focus:ring focus:ring-green-100 outline-none transition"
+              />
+              {discountPercent > 0 && (
+                <p
+                  className={`text-sm mt-1 ${
+                    discountPercent > 70
+                      ? 'text-red-600 font-semibold'
+                      : discountPercent > 40
+                      ? 'text-orange-500'
+                      : 'text-green-600'
+                  }`}
+                >
+                  Giảm khoảng <span className="font-semibold">{discountPercent}%</span> so với giá gốc
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 mb-1">Bắt đầu KM</label>
+                <input
+                  type="date"
+                  value={discountStartDate}
+                  onChange={(e) => setDiscountStartDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 mb-1">Kết thúc KM</label>
+                <input
+                  type="date"
+                  value={discountEndDate}
+                  onChange={(e) => setDiscountEndDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mô tả đầy đủ */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">Mô tả *</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows="5"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+            />
+          </div>
+
+          {/* Ảnh */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">Hình ảnh (tối đa 5 ảnh)</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFilesChange}
+              className="block w-full border border-gray-200 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
+            />
+            {previews.length > 0 && (
+              <div className="mt-3 grid grid-cols-5 gap-3">
+                {previews.map((p, i) => (
+                  <div key={i} className="relative group">
+                    <img
+                      src={p}
+                      alt=""
+                      className="w-28 h-28 object-cover rounded-lg border border-gray-200 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePreviewAt(i)}
+                      className="absolute top-1 right-1 bg-white/80 hover:bg-red-500 hover:text-white text-red-500 rounded-full p-1 shadow transition"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Nổi bật */}
+          <div className="flex items-center gap-3">
+            <input
+              id="featured"
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="w-4 h-4 accent-pink-500"
+            />
+            <label htmlFor="featured" className="text-gray-700">
+              Sản phẩm nổi bật
+            </label>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/products')}
+              className="px-5 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-6 py-2 rounded-lg bg-pink-500 text-white font-medium hover:bg-pink-600 shadow transition"
+            >
+              {submitting ? 'Đang lưu...' : 'Thêm sản phẩm'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -6,9 +6,8 @@ const Sidebar = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { slug } = useParams(); // highlight category hiện tại
+  const { slug } = useParams();
 
-  // Hardcode fallback
   const fallbackCategories = [
     { _id: '1', name: 'Khuyến mãi gốc', slug: 'khuyen-mai-goc' },
     { _id: '2', name: 'Hoa cảm ơn', slug: 'hoa-cam-on' },
@@ -28,7 +27,6 @@ const Sidebar = () => {
 
   const fetchCategories = async () => {
     try {
-      console.log('Sidebar: Fetching categories...');
       const response = await categoryAPI.getCategories();
       if (response.data && Array.isArray(response.data)) {
         setCategories(response.data);
@@ -46,9 +44,9 @@ const Sidebar = () => {
 
   if (loading) {
     return (
-      <aside className="sidebar bg-white p-4 max-w-xs ml-5 mt-4 shadow rounded border">
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-green-700 mx-auto mb-2"></div>
+      <aside className="bg-[#faf8f6] p-5 max-w-xs ml-5 mt-4 rounded-2xl border border-[#f0e8e3] shadow-sm">
+        <div className="text-center py-6">
+          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#e06c7f] mx-auto mb-3"></div>
           <p className="text-sm text-gray-600">Đang tải danh mục...</p>
         </div>
       </aside>
@@ -56,42 +54,38 @@ const Sidebar = () => {
   }
 
   return (
-    <aside className="sidebar bg-white p-4 max-w-xs ml-5 mt-4 shadow rounded border border-gray-200">
-      <h3 className="font-bold text-lg mb-4 text-green-700 border-b pb-2">
-        Danh mục sản phẩm
-      </h3>
+    <aside className="bg-[#faf8f6] p-5 max-w-xs ml-5 mt-4 rounded-2xl border border-[#f0e8e3] shadow-sm">
+  <h3 className="font-semibold text-lg mb-4 text-[#e06c7f] border-b border-[#e4d9d5] pb-2">
+    Danh mục sản phẩm
+  </h3>
 
-      {error && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-2 rounded mb-4 text-sm">
-          <p>{error}</p>
-          <button 
-            onClick={fetchCategories}
-            className="text-green-700 hover:text-green-900 underline text-xs mt-1"
-          >
-            Thử lại
-          </button>
-        </div>
-      )}
-      
-      <ul className="list-none p-0">
-        {categories.map((category) => (
-          <li 
-            key={category._id || category.id}
-            className={`py-3 px-4 border-b border-gray-200 cursor-pointer transition-all duration-200 
-              ${slug === category.slug 
-                ? 'text-green-800 font-semibold bg-green-100' 
-                : 'text-gray-700 hover:bg-green-50 hover:text-green-700'}`}
-          >
-            <Link 
-              to={`/category/${category.slug}`}
-              className="block w-full no-underline"
-            >
-              {category.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </aside>
+  {/* 🔥 NÚT GỬI EMAIL ĐẶT Ở ĐÂY */}
+  <Link
+    to="/admin/email"
+    className="block text-center bg-[#e06c7f] text-white py-3 rounded-lg mb-4 hover:bg-[#d35d75] transition"
+  >
+    📩 Gửi Email Khuyến Mãi
+  </Link>
+
+  <ul className="list-none p-0">
+    {categories.map((category) => (
+      <li
+        key={category._id || category.id}
+        className={`py-3 px-4 border-b border-[#f0e8e3] cursor-pointer transition-all duration-200 rounded-lg
+          ${
+            slug === category.slug
+              ? 'text-[#e06c7f] font-semibold bg-[#fde8eb]'
+              : 'text-gray-700 hover:bg-[#fceef0] hover:text-[#e06c7f]'
+          }`}
+      >
+        <Link to={`/category/${category.slug}`} className="block w-full no-underline">
+          {category.name}
+        </Link>
+      </li>
+    ))}
+  </ul>
+</aside>
+
   );
 };
 

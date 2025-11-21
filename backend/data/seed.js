@@ -5,6 +5,8 @@ const User = require('../models/User');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const bcrypt = require('bcryptjs');
+
 
 // Tải biến môi trường
 dotenv.config();
@@ -17,11 +19,11 @@ const users = [
   {
     name: 'Admin',
     email: 'nguyenhongcamtien694@gmail.com',
-    password: '123456', // Sẽ được mã hóa bởi schema pre-save hook
+    password: bcrypt.hashSync('123456', 10), // 🔥 Hash đúng chuẩn
     role: 'admin'
-  },
-
+  }
 ];
+
   
 const categories = [
   {

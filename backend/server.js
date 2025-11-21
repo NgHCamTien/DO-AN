@@ -2,114 +2,117 @@ const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 const connectDB = require('./config/db');
+const cron = require("node-cron");
+const axios = require("axios");
 
-// Load biến môi trường
 dotenv.config();
-
-// Kết nối database
 connectDB();
 
-// Import routes
+const app = express();
+
+// Create uploads folder
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log('📁 Created uploads folder');
+}
+
+// Static
+app.use('/uploads', express.static(uploadDir));
+
+// Middleware
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+);
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ================= ROUTES =================
+
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders');
 const newsletterRoutes = require('./routes/newsletter');
-const couponRoutes = require('./routes/coupons'); // THÊM DÒNG NÀY
+const couponRoutes = require('./routes/coupons');
+const emailRoutes = require('./routes/emailRoutes');
 
-const app = express();
+const adminProductRoutes = require('./routes/adminProductRoutes');
+const adminUserRoutes = require('./routes/adminUsers');
+const adminDashboardRoutes = require('./routes/adminDashboard');
+const adminCouponRoutes = require('./routes/adminCoupons');
 
-// Middleware CORS - Cấu hình chi tiết
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+const uploadRoutes = require('./routes/uploadRoutes');
+const userRoutes = require("./routes/users");
+const reviewRoutes = require('./routes/reviewRoutes');
+const notificationRoutes = require("./routes/notificationRoutes");
 
-// Middleware khác
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Static folder cho uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Routes
+// ✔ ORDER ĐÚNG
 app.use('/api/auth', authRoutes);
+app.use('/api/reviews', reviewRoutes);    // ⭐ review ngay sau auth
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/newsletter', newsletterRoutes);
-app.use('/api/coupons', couponRoutes); // THÊM DÒNG NÀY
+app.use('/api/coupons', couponRoutes);
+app.use('/api/email', emailRoutes);
+app.use('/api/users', userRoutes);
 
-// Route mặc định
+// ADMIN routes
+app.use('/api/upload', uploadRoutes);
+app.use('/api/admin/products', adminProductRoutes);
+app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/coupons', adminCouponRoutes);
+app.use("/api/notifications", notificationRoutes);
+
+// Test
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'DTP Flower Shop API is running...',
-    version: '1.0.0',
-    endpoints: {
-      auth: '/api/auth',
-      products: '/api/products',
-      categories: '/api/categories',
-      orders: '/api/orders',
-      newsletter: '/api/newsletter',
-      coupons: '/api/coupons' // THÊM DÒNG NÀY
-    },
-    emailService: process.env.EMAIL_USER ? 'Configured' : 'Not configured'
-  });
+  res.json({ message: '🌸 DTP Flower Shop API is running...' });
 });
 
-// Route kiểm tra health
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    database: 'Connected',
-    emailService: process.env.EMAIL_USER ? 'Ready' : 'Not configured'
-  });
+// 404 Handler
+app.use((req, res, next) => {
+  if (req.originalUrl.startsWith('/uploads/')) return next();
+  res.status(404).json({ success: false, message: 'Route không tồn tại' });
 });
 
-// Route test email service
-app.get('/api/test-email', (req, res) => {
-  res.json({
-    emailUser: process.env.EMAIL_USER ? 'Configured' : 'Not set',
-    emailPass: process.env.EMAIL_PASS ? 'Configured' : 'Not set',
-    frontendUrl: process.env.FRONTEND_URL || 'Not set'
-  });
-});
-
-// Xử lý lỗi 404
-app.use((req, res) => {
-  res.status(404).json({ 
-    success: false,
-    message: 'Route không tồn tại',
-    path: req.originalUrl,
-    method: req.method
-  });
-});
-
-// Xử lý lỗi chung
+// Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('🔥 Error:', err);
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
     success: false,
     message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
 });
 
-// Khởi động server
+// Start server
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Email service: ${process.env.EMAIL_USER ? '✅ Configured' : '❌ Not configured'}`);
-  console.log(`🌐 Admin panel: http://localhost:3000/admin/login`);
-  console.log(`📊 API health: http://localhost:${PORT}/api/health`);
-  console.log(`🎫 Coupons API: http://localhost:${PORT}/api/coupons`);
+  console.log(`🌐 Upload API ready at: http://localhost:${PORT}/uploads`);
+});
+
+// ================= CRON JOBS =================
+cron.schedule("0 9 14 2 *", () => {
+  axios.post("http://localhost:5000/api/email/send", { event: "valentine" });
+});
+cron.schedule("0 9 8 3 *", () => {
+  axios.post("http://localhost:5000/api/email/send", { event: "women" });
+});
+cron.schedule("0 9 1 1 *", () => {
+  axios.post("http://localhost:5000/api/email/send", { event: "tet" });
+});
+cron.schedule("0 9 24 12 *", () => {
+  axios.post("http://localhost:5000/api/email/send", { event: "noel" });
 });

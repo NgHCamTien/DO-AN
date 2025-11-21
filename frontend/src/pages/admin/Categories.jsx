@@ -1,19 +1,14 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    description: ''
-  });
-  const { user, logout } = useContext(AuthContext);
+  const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [formData, setFormData] = useState({ name: "", slug: "", description: "" });
+  const { logout } = useContext(AuthContext);
 
   useEffect(() => {
     fetchCategories();
@@ -22,319 +17,228 @@ const AdminCategories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/categories');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setCategories(data);
-      } else {
-        setError('Không thể tải danh sách danh mục');
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      setError('Lỗi kết nối đến server');
+      const res = await fetch("http://localhost:5000/api/categories");
+      const data = await res.json();
+      if (res.ok) setCategories(data);
+      else setError("Không thể tải danh mục");
+    } catch {
+      setError("Lỗi kết nối đến server");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
-      // Auto generate slug from name
-      ...(name === 'name' && {
-        slug: value.toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim()
-      })
+      ...(name === "name" && {
+        slug: value
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .trim(),
+      }),
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    try {
-      const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
-      const url = editingCategory 
-        ? `http://localhost:5000/api/categories/${editingCategory._id}`
-        : 'http://localhost:5000/api/categories';
-      
-      const method = editingCategory ? 'PUT' : 'POST';
+    const token = JSON.parse(localStorage.getItem("userInfo"))?.token;
+    if (!token) return alert("Phiên đăng nhập hết hạn.");
 
-      const response = await fetch(url, {
+    const url = editing
+      ? `http://localhost:5000/api/categories/${editing._id}`
+      : "http://localhost:5000/api/categories";
+    const method = editing ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
-      if (response.ok) {
-        alert(editingCategory ? 'Cập nhật danh mục thành công!' : 'Thêm danh mục thành công!');
+      if (res.ok) {
+        alert(editing ? "Cập nhật danh mục thành công!" : "Thêm danh mục thành công!");
         fetchCategories();
         resetForm();
       } else {
-        const data = await response.json();
-        alert(data.message || 'Có lỗi xảy ra');
+        const data = await res.json();
+        alert(data.message || "Không thể lưu danh mục");
       }
-    } catch (error) {
-      console.error('Error saving category:', error);
-      alert('Lỗi kết nối đến server');
+    } catch {
+      alert("Lỗi kết nối đến server");
     }
   };
 
-  const handleEdit = (category) => {
-    setEditingCategory(category);
-    setFormData({
-      name: category.name,
-      slug: category.slug,
-      description: category.description || ''
-    });
-    setShowAddForm(true);
-  };
-
-  const handleDelete = async (categoryId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
-      return;
-    }
-
+  const handleDelete = async (id) => {
+    if (!window.confirm("Xóa danh mục này?")) return;
     try {
-      const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
-      const response = await fetch(`http://localhost:5000/api/categories/${categoryId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const token = JSON.parse(localStorage.getItem("userInfo"))?.token;
+      const res = await fetch(`http://localhost:5000/api/categories/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (response.ok) {
-        alert('Xóa danh mục thành công!');
+      if (res.ok) {
+        alert("Đã xóa danh mục");
         fetchCategories();
       } else {
-        const data = await response.json();
-        alert(data.message || 'Không thể xóa danh mục');
+        alert("Không thể xóa danh mục");
       }
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      alert('Lỗi khi xóa danh mục');
+    } catch {
+      alert("Lỗi kết nối server");
     }
   };
 
   const resetForm = () => {
-    setFormData({ name: '', slug: '', description: '' });
-    setEditingCategory(null);
-    setShowAddForm(false);
+    setFormData({ name: "", slug: "", description: "" });
+    setEditing(null);
+    setShowForm(false);
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Admin Header */}
-      <header className="bg-green-800 text-white py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-xl font-bold">DTP Flower Shop - Quản trị</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <span>{user?.name || 'Admin'}</span>
-          <button 
-            onClick={logout}
-            className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </header>
-
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-md p-4">
-          <nav>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/admin/dashboard" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Tổng quan
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/products" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý sản phẩm
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/orders" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý đơn hàng
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/categories" className="block py-2 px-4 rounded bg-green-100 text-green-800 font-medium">
-                  Quản lý danh mục
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="block py-2 px-4 rounded hover:bg-gray-100 text-blue-700" target="_blank">
-                  Xem trang web
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Quản lý danh mục</h2>
-            <button
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-600"
-            >
-              {showAddForm ? 'Hủy' : 'Thêm danh mục mới'}
-            </button>
-          </div>
-
-          {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-              {error}
-            </div>
-          )}
-
-          {/* Add/Edit Form */}
-          {showAddForm && (
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <h3 className="text-lg font-bold mb-4">
-                {editingCategory ? 'Sửa danh mục' : 'Thêm danh mục mới'}
-              </h3>
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tên danh mục *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Slug *
-                    </label>
-                    <input
-                      type="text"
-                      name="slug"
-                      value={formData.slug}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mô tả
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  ></textarea>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <button
-                    type="submit"
-                    className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-600"
-                  >
-                    {editingCategory ? 'Cập nhật' : 'Thêm mới'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Categories List */}
-          {loading ? (
-            <div className="flex justify-center my-10">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
-            </div>
-          ) : categories.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-              <p className="text-gray-500">Chưa có danh mục nào</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tên danh mục
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Slug
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mô tả
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {categories.map(category => (
-                    <tr key={category._id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {category.name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {category.slug}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-500">
-                          {category.description || 'Không có mô tả'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => handleEdit(category)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          onClick={() => handleDelete(category._id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Xóa
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+ <div className="min-h-screen bg-white text-[#2c2c2c] font-sans">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-10 -ml-2">
+        <h2 className="text-2xl font-semibold flex items-center gap-2">
+          <span className="text-[#e06c7f]">🗂️</span> QUẢN LÝ DANH MỤC
+        </h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-[#e06c7f] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#c85b70] transition"
+        >
+          {showForm ? "Đóng" : "+ Thêm danh mục"}
+        </button>
       </div>
+
+      {error && (
+        <div className="bg-[#ffe6e9] text-[#c85b70] px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      {/* Form thêm/sửa */}
+      {showForm && (
+        <div className="bg-[#faf8f6] border border-[#f1e4da] rounded-lg p-6 mb-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-[#8b5e3c] mb-4">
+            {editing ? "✏️ Sửa danh mục" : "➕ Thêm danh mục mới"}
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Tên danh mục *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-[#e4c6ba] rounded-md focus:outline-none focus:ring-1 focus:ring-[#e06c7f]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Slug *</label>
+                <input
+                  type="text"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-[#e4c6ba] rounded-md focus:outline-none focus:ring-1 focus:ring-[#e06c7f]"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Mô tả</label>
+              <textarea
+                name="description"
+                rows="3"
+                value={formData.description}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-[#e4c6ba] rounded-md focus:outline-none focus:ring-1 focus:ring-[#e06c7f]"
+              ></textarea>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="bg-[#e06c7f] text-white px-4 py-2 rounded-md hover:bg-[#c85b70] transition"
+              >
+                {editing ? "Cập nhật" : "Thêm mới"}
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-4 py-2 border border-[#e4c6ba] text-[#8b5e3c] rounded-md hover:bg-[#f1e4da] transition"
+              >
+                Hủy
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Danh sách danh mục */}
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#e06c7f]"></div>
+        </div>
+      ) : categories.length === 0 ? (
+        <div className="bg-[#faf8f6] text-[#8b5e3c] border border-[#f1e4da] rounded-lg p-8 text-center">
+          Chưa có danh mục nào 🌸
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-[#f1e4da] overflow-hidden">
+          <table className="min-w-full text-sm text-[#2c2c2c]">
+            <thead className="bg-[#faf8f6] border-b border-[#f1e4da]">
+              <tr>
+                <th className="px-6 py-3 text-left font-semibold">Tên danh mục</th>
+                <th className="px-6 py-3 text-left font-semibold">Slug</th>
+                <th className="px-6 py-3 text-left font-semibold">Mô tả</th>
+                <th className="px-6 py-3 text-left font-semibold">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((c) => (
+                <tr key={c._id} className="hover:bg-[#faf8f6] transition">
+                  <td className="px-6 py-4 font-medium">{c.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{c.slug}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {c.description || "Không có mô tả"}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <button
+                      onClick={() => {
+                        setEditing(c);
+                        setFormData({
+                          name: c.name,
+                          slug: c.slug,
+                          description: c.description || "",
+                        });
+                        setShowForm(true);
+                      }}
+                      className="text-[#8b5e3c] hover:text-[#e06c7f] mr-3"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      onClick={() => handleDelete(c._id)}
+                      className="text-[#e06c7f] hover:text-[#c85b70]"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

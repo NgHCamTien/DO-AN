@@ -3,177 +3,116 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
-  const { user, logout } = useContext(AuthContext);
-  const [stats, setStats] = useState({
-    products: 0,
-    orders: 0
-  });
+  const { user } = useContext(AuthContext);
+  const [stats, setStats] = useState({ products: 0, orders: 0 });
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
-    fetchRecentOrders();
+    setRecentOrders([]);
+    setLoading(false);
   }, []);
 
   const fetchStats = async () => {
     try {
       const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
-      
-      // Fetch products count
-      const productsRes = await fetch('http://localhost:5000/api/products', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await fetch('http://localhost:5000/api/products', {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      const productsData = await productsRes.json();
-      
+      const data = await res.json();
       setStats({
-        products: productsData.count || productsData.products?.length || 0,
-        orders: 0 // Will be implemented when orders API is ready
+        products: data.count || data.products?.length || 0,
+        orders: 0,
       });
-      
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      // Use fallback data
-      setStats({
-        products: 8, // From seed data
-        orders: 0
-      });
+    } catch {
+      setStats({ products: 0, orders: 0 });
     }
   };
 
-  const fetchRecentOrders = async () => {
-    try {
-      // This will be implemented when orders are working
-      // For now, use empty array
-      setRecentOrders([]);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      setRecentOrders([]);
-      setLoading(false);
-    }
-  };
-  
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Admin Header */}
-      <header className="bg-green-800 text-white py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-xl font-bold">DTP Flower Shop - Quản trị</h1>
+    <div className="min-h-screen bg-white text-[#2c2c2c] font-sans">
+          <div className="min-h-screen bg-white text-[#2c2c2c] font-sans">
+
+        {/* Header */}
+        <div className="flex justify-between items-center mb-10">
+          <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <span className="text-[#e06c7f]">🌸</span> TỔNG QUAN
+          </h2>
+          <p className="text-sm text-[#8b5e3c]">
+            Xin chào, <span className="font-medium">{user?.name || 'Admin'}</span>
+          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <span>{user?.name || 'Admin'}</span>
-          <button 
-            onClick={logout}
-            className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </header>
-      
-      {/* Admin Content */}
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-md p-4">
-          <nav>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/admin/dashboard" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Tổng quan
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/products" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý sản phẩm
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/orders" className="block py-2 px-4 rounded bg-green-100 text-green-800 font-medium">
-                  Quản lý đơn hàng
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/categories" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý danh mục
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="block py-2 px-4 rounded hover:bg-gray-100 text-blue-700" target="_blank">
-                  Xem trang web
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-        
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <h2 className="text-2xl font-bold mb-6">Tổng quan</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-bold text-green-800 mb-2">Sản phẩm</h3>
-              <p className="text-3xl font-bold">{stats.products}</p>
-              <Link to="/admin/products" className="text-blue-600 text-sm hover:underline mt-2 inline-block">
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {[
+            { title: '🌷 Sản phẩm', count: stats.products, link: '/admin/products' },
+            { title: '💌 Đơn hàng', count: stats.orders, link: '/admin/orders' },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="bg-white rounded-lg shadow-sm p-6 border border-[#f1e4da] hover:shadow-md transition"
+            >
+              <h3 className="text-base font-semibold mb-1">{item.title}</h3>
+              <p className="text-4xl font-bold text-[#2c2c2c]">{item.count}</p>
+              <Link
+                to={item.link}
+                className="text-sm text-[#8b5e3c] hover:text-[#e06c7f] mt-2 inline-block transition"
+              >
                 Xem chi tiết →
               </Link>
             </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-bold text-green-800 mb-2">Đơn hàng</h3>
-              <p className="text-3xl font-bold">{stats.orders}</p>
-              <Link to="/admin/orders" className="text-blue-600 text-sm hover:underline mt-2 inline-block">
-                Xem chi tiết →
-              </Link>
-            </div>
+          ))}
+        </div>
+
+        {/* Recent Orders */}
+        <div className="bg-white rounded-lg shadow-sm border border-[#f1e4da]">
+          <div className="px-6 py-4 border-b border-[#f1e4da] flex items-center gap-2">
+            <span>🕊️</span>
+            <h3 className="text-base font-semibold">Đơn hàng gần đây</h3>
           </div>
-          
-          <div className="mt-8">
-            <h3 className="text-xl font-bold mb-4">Đơn hàng gần đây</h3>
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              {loading ? (
-                <div className="p-6 text-center">Đang tải...</div>
-              ) : recentOrders.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
-                  Chưa có đơn hàng nào
-                </div>
-              ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã đơn</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khách hàng</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày đặt</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentOrders.map(order => (
-                      <tr key={order._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">{order._id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{order.user?.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {new Date(order.createdAt).toLocaleDateString('vi-VN')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {order.totalPrice.toLocaleString('vi-VN')}₫
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            {order.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+
+          {loading ? (
+            <div className="p-6 text-center text-[#8b5e3c]">Đang tải...</div>
+          ) : recentOrders.length === 0 ? (
+            <div className="p-6 text-center text-[#e06c7f] text-sm">
+              Chưa có đơn hàng nào 🌸
             </div>
-          </div>
+          ) : (
+            <table className="min-w-full text-sm text-[#2c2c2c]">
+              <thead className="bg-[#faf8f6] border-b border-[#f1e4da]">
+                <tr>
+                  {['Mã đơn', 'Khách hàng', 'Ngày đặt', 'Tổng tiền', 'Trạng thái'].map(
+                    (col) => (
+                      <th key={col} className="px-6 py-3 text-left font-semibold">
+                        {col}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.map((order) => (
+                  <tr key={order._id} className="hover:bg-[#faf8f6] transition">
+                    <td className="px-6 py-4">{order._id}</td>
+                    <td className="px-6 py-4">{order.user?.name}</td>
+                    <td className="px-6 py-4">
+                      {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.totalPrice.toLocaleString('vi-VN')}₫
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-[#e06c7f22] text-[#2c2c2c]">
+                        {order.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

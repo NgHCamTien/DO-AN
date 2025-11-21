@@ -10,7 +10,7 @@ const {
   updateCategory,
   deleteCategory
 } = require('../controllers/categoryController');
-const { protect, admin } = require('../middleware/auth');
+const { protect, admin } = require('../middleware/authMiddleware');
 
 // Cấu hình multer để upload hình ảnh
 const storage = multer.diskStorage({

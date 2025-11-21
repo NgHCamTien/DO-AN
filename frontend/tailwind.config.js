@@ -6,7 +6,7 @@ module.exports = {
   theme: {
    extend: {
   colors: {
-    primary: '#e75480', // hồng pastel (nút, accent)
+    primary: '#e06c7f', // hồng pastel (nút, accent)
     secondary: '#f9f5f1', // nền be nhạt
     dark: '#2c2c2c', // chữ đen sang trọng
   },

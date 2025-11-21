@@ -1,346 +1,479 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useEffect, useState, useContext } from "react";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
+import Select from "react-select";
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const EditProduct = () => {
   const { id } = useParams();
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    discountPrice: '',
-    categoryId: '',
-    // BỎ TRƯỜNG quantity
-    isFeatured: false
-  });
-  const [images, setImages] = useState([]);
-  const [currentImages, setCurrentImages] = useState([]);
+  const navigate = useNavigate();
+  const { user, logout } = useContext(AuthContext || {});
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [error, setError] = useState('');
-  const { user, logout } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState({
+    sku: "",
+    name: "",
+    shortDescription: "",
+    description: "",
+    flowerTypes: [],
+    season: "Quanh năm",
+    categoryId: "",
+    price: "",
+    discountPrice: "",
+    discountStartDate: "",
+    discountEndDate: "",
+    stock: 0,
+    isFeatured: false,
+    tagsInput: "",
+    tags: [],
+  });
+
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [currentImages, setCurrentImages] = useState([]);
+
+  // 🧮 Tính phần trăm giảm
+  const discountPercent =
+    formData.price && formData.discountPrice
+      ? Math.min(
+          Math.round(
+            ((formData.price - formData.discountPrice) / formData.price) * 100
+          ),
+          99
+        )
+      : 0;
+
+  // 🟢 Load sản phẩm cũ
+  const fetchProduct = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/products/${id}`);
+      const p = res.data.data || res.data.product || res.data;
+
+      setFormData({
+        sku: p.sku || "",
+        name: p.name || "",
+        shortDescription: p.shortDescription || "",
+        description: p.description || "",
+        flowerTypes: p.flowerTypes || [],
+        season: p.season || "Quanh năm",
+        categoryId: p.category?._id || "",
+        price: p.price || "",
+        discountPrice: p.discountPrice || "",
+        discountStartDate: p.discountStartDate
+          ? p.discountStartDate.split("T")[0]
+          : "",
+        discountEndDate: p.discountEndDate
+          ? p.discountEndDate.split("T")[0]
+          : "",
+        stock: p.stock || 0,
+        isFeatured: p.isFeatured || false,
+        tagsInput: (p.tags || []).join(", "),
+        tags: p.tags || [],
+      });
+
+      setCurrentImages(p.images || []);
+    } catch (err) {
+      console.error(err);
+      setError("Không thể tải dữ liệu sản phẩm.");
+    } finally {
+      setFetching(false);
+    }
+  };
 
   useEffect(() => {
     fetchProduct();
-    fetchCategories();
   }, [id]);
 
-  const fetchProduct = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/products/${id}`);
-      if (response.ok) {
-        const product = await response.json();
-        setFormData({
-          name: product.name || '',
-          description: product.description || '',
-          price: product.price || '',
-          discountPrice: product.discountPrice || '',
-          categoryId: product.category?._id || '',
-          // BỎ quantity: product.quantity || '',
-          isFeatured: product.isFeatured || false
-        });
-        setCurrentImages(product.images || []);
-      } else {
-        setError('Không thể tải thông tin sản phẩm');
+  // 🟢 Load danh mục
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/categories`);
+        const cats = Array.isArray(res.data)
+          ? res.data
+          : res.data.categories || [];
+        setCategories(cats);
+      } catch (err) {
+        console.error("Load categories error", err);
       }
-    } catch (error) {
-      console.error('Error fetching product:', error);
-      setError('Lỗi kết nối đến server');
-    } finally {
-      setFetchLoading(false);
+    };
+    fetchCats();
+  }, []);
+
+  // 🟢 Tạo preview ảnh
+  useEffect(() => {
+    if (!files.length) return setPreviews([]);
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [files]);
+
+  // 🟢 Xử lý tag
+  useEffect(() => {
+    const arr = formData.tagsInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t);
+    setFormData((prev) => ({ ...prev, tags: arr }));
+  }, [formData.tagsInput]);
+
+  const handleFilesChange = (e) => {
+    const selected = Array.from(e.target.files);
+    if (selected.length > 5) {
+      alert("Tối đa 5 ảnh thôi nhé 🌸");
+      return;
     }
+    setFiles(selected);
   };
 
-  const fetchCategories = async () => {
+  const getToken = () => {
     try {
-      const response = await fetch('http://localhost:5000/api/categories');
-      const data = await response.json();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+      return user?.token || JSON.parse(localStorage.getItem("userInfo"))?.token;
+    } catch {
+      return null;
     }
   };
-
-  const handleInputChange = (e) => {
+  // 🟢 Hàm xử lý input (chung cho tất cả các ô)
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
-  const handleImageChange = (e) => {
-    setImages(Array.from(e.target.files));
-  };
-
+  // 🟢 Cập nhật
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setError("");
+
+    const { name, price, categoryId, description, sku } = formData;
+    if (!name || !price || !categoryId || !description || !sku) {
+      setError("Vui lòng điền đầy đủ các trường có dấu *");
+      return;
+    }
+
+    if (Number(formData.discountPrice) >= Number(formData.price)) {
+      setError("Giá khuyến mãi phải nhỏ hơn giá gốc");
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      if (logout) logout();
+      return;
+    }
 
     try {
-      const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
-      const formDataToSend = new FormData();
+      setLoading(true);
+      let imageUrls = currentImages;
 
-      // Append text fields
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== '') {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
-
-      // Append new images if any
-      images.forEach(image => {
-        formDataToSend.append('images', image);
-      });
-
-      const response = await fetch(`http://localhost:5000/api/products/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
-
-      if (response.ok) {
-        alert('Cập nhật sản phẩm thành công!');
-        navigate('/admin/products');
-      } else {
-        const data = await response.json();
-        setError(data.message || 'Có lỗi xảy ra khi cập nhật sản phẩm');
+      if (files.length > 0) {
+        const imgForm = new FormData();
+        files.forEach((f) => imgForm.append("images", f));
+        const uploadRes = await axios.post(`${API_URL}/api/upload`, imgForm, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        imageUrls = uploadRes.data.urls || [];
       }
-    } catch (error) {
-      console.error('Error updating product:', error);
-      setError('Lỗi kết nối đến server');
+
+      const payload = {
+        ...formData,
+        price: Number(formData.price),
+        discountPrice: formData.discountPrice
+          ? Number(formData.discountPrice)
+          : undefined,
+        stock: Number(formData.stock),
+        tags: formData.tags,
+        images: imageUrls,
+      };
+
+      await axios.put(`${API_URL}/api/products/${id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert("🌸 Cập nhật sản phẩm thành công!");
+      await fetchProduct();
+    } catch (err) {
+      console.error(err);
+      setError(err?.response?.data?.message || "Lỗi khi cập nhật sản phẩm.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetchLoading) {
+  if (fetching)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
+        <div className="animate-spin w-10 h-10 border-4 border-pink-400 border-t-transparent rounded-full"></div>
       </div>
     );
-  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Admin Header */}
-      <header className="bg-green-800 text-white py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-xl font-bold">DTP Flower Shop - Quản trị</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <span>{user?.name || 'Admin'}</span>
-          <button 
-            onClick={logout}
-            className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-blue-50 py-10 px-4">
+      <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
+        <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">
+          🌸 Cập Nhật Sản Phẩm
+        </h2>
 
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-md p-4">
-          <nav>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/admin/dashboard" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Tổng quan
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/products" className="block py-2 px-4 rounded bg-green-100 text-green-800 font-medium">
-                  Quản lý sản phẩm
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/orders" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý đơn hàng
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/categories" className="block py-2 px-4 rounded hover:bg-gray-100">
-                  Quản lý danh mục
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="block py-2 px-4 rounded hover:bg-gray-100 text-blue-700" target="_blank">
-                  Xem trang web
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="mb-6">
-            <Link to="/admin/products" className="text-blue-600 hover:underline">
-              ← Quay lại danh sách sản phẩm
-            </Link>
-            <h2 className="text-2xl font-bold mt-2">Sửa sản phẩm</h2>
+        {error && (
+          <div className="mb-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg">
+            {error}
           </div>
+        )}
 
-          {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-              {error}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Mã & tên */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Mã sản phẩm *
+              </label>
+              <input
+                name="sku"
+                value={formData.sku}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, sku: e.target.value }))
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              />
             </div>
-          )}
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tên sản phẩm *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Danh mục *
-                  </label>
-                  <select
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
-                  >
-                    <option value="">Chọn danh mục</option>
-                    {categories.map(category => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Giá gốc (VNĐ) *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Giá khuyến mãi (VNĐ)
-                  </label>
-                  <input
-                    type="number"
-                    name="discountPrice"
-                    value={formData.discountPrice}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                {/* BỎ TRƯỜNG SỐ LƯỢNG */}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hình ảnh mới
-                  </label>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Chọn hình mới để thay thế (không bắt buộc)</p>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mô tả *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                ></textarea>
-              </div>
-
-              {currentImages.length > 0 && (
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hình ảnh hiện tại
-                  </label>
-                  <div className="flex gap-2 flex-wrap">
-                    {currentImages.map((image, index) => (
-                      <img
-                        key={index}
-                        src={`http://localhost:5000${image}`}
-                        alt={`Product ${index + 1}`}
-                        className="w-20 h-20 object-cover rounded border"
-                        onError={(e) => {
-                          e.target.src = '/api/placeholder/80/80';
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="isFeatured"
-                    checked={formData.isFeatured}
-                    onChange={handleInputChange}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700">Sản phẩm nổi bật</span>
-                </label>
-              </div>
-
-              <div className="mt-6 flex gap-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-600 disabled:opacity-50"
-                >
-                  {loading ? 'Đang cập nhật...' : 'Cập nhật sản phẩm'}
-                </button>
-                <Link
-                  to="/admin/products"
-                  className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
-                >
-                  Hủy
-                </Link>
-              </div>
-            </form>
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Tên sản phẩm *
+              </label>
+              <input
+                name="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, name: e.target.value }))
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              />
+            </div>
           </div>
-        </div>
+
+          {/* Loại hoa */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">
+              Loại hoa
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Select
+                  isMulti
+                  value={formData.flowerTypes.map((f) => ({
+                    value: f,
+                    label: f,
+                  }))}
+                  onChange={(selected) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      flowerTypes: selected.map((s) => s.value),
+                    }))
+                  }
+                  options={[
+                    { value: "Hoa hồng", label: "Hoa hồng" },
+                    { value: "Hoa tulip", label: "Hoa tulip" },
+                    { value: "Hoa baby", label: "Hoa baby" },
+                    { value: "Hoa hướng dương", label: "Hoa hướng dương" },
+                    { value: "Hoa lan", label: "Hoa lan" },
+                    { value: "Hoa cúc", label: "Hoa cúc" },
+                  ]}
+                  placeholder="Chọn hoặc nhập thêm..."
+                  className="text-sm"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="+ Thêm loại mới"
+                className="border border-gray-300 rounded-lg px-2 py-1 w-40 text-sm focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.target.value.trim()) {
+                    e.preventDefault();
+                    const newFlower = e.target.value.trim();
+                    if (!formData.flowerTypes.includes(newFlower)) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        flowerTypes: [...prev.flowerTypes, newFlower],
+                      }));
+                    }
+                    e.target.value = "";
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Giá khuyến mãi & ngày */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Giá gốc *
+              </label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-400 focus:ring focus:ring-green-100 outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Giá khuyến mãi
+              </label>
+              <input
+                type="number"
+                name="discountPrice"
+                value={formData.discountPrice}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-400 focus:ring focus:ring-green-100 outline-none transition"
+              />
+              {discountPercent > 0 && (
+                <p className="text-sm mt-1 text-green-600">
+                  Giảm khoảng{" "}
+                  <span className="font-semibold">{discountPercent}%</span> so
+                  với giá gốc
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Thời gian KM */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-gray-700 mb-1">Bắt đầu KM</label>
+              <input
+                type="date"
+                value={formData.discountStartDate}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    discountStartDate: e.target.value,
+                  }))
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Kết thúc KM</label>
+              <input
+                type="date"
+                value={formData.discountEndDate}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    discountEndDate: e.target.value,
+                  }))
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              />
+            </div>
+          </div>
+
+          {/* Mô tả */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">Mô tả *</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows="5"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+            />
+          </div>
+
+          {/* Ảnh */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">
+              Hình ảnh (chọn mới để thay thế)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFilesChange}
+              className="block w-full border border-gray-200 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
+            />
+            {currentImages.length > 0 && files.length === 0 && (
+              <div className="mt-3 grid grid-cols-5 gap-3">
+                {currentImages.map((img, i) => (
+                  <img
+                    key={i}
+                    src={`${API_URL}${img}`}
+                    alt=""
+                    className="w-28 h-28 object-cover rounded-lg border border-gray-200 shadow-sm"
+                  />
+                ))}
+              </div>
+            )}
+            {previews.length > 0 && (
+              <div className="mt-3 grid grid-cols-5 gap-3">
+                {previews.map((p, i) => (
+                  <img
+                    key={i}
+                    src={p}
+                    alt=""
+                    className="w-28 h-28 object-cover rounded-lg border border-gray-200 shadow-sm"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Nổi bật + tags */}
+          <div className="flex flex-col gap-3">
+            <input
+              name="tagsInput"
+              value={formData.tagsInput}
+              onChange={handleChange}
+              placeholder="hoa hồng, sinh nhật, dễ thương..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+            />
+            <div className="flex items-center gap-3">
+              <input
+                id="featured"
+                type="checkbox"
+                name="isFeatured"
+                checked={formData.isFeatured}
+                onChange={handleChange}
+                className="w-4 h-4 accent-pink-500"
+              />
+              <label htmlFor="featured" className="text-gray-700">
+                Sản phẩm nổi bật
+              </label>
+            </div>
+          </div>
+
+          {/* Nút */}
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/products")}
+              className="px-5 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 rounded-lg bg-pink-500 text-white font-medium hover:bg-pink-600 shadow transition"
+            >
+              {loading ? "Đang lưu..." : "Cập nhật sản phẩm"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
