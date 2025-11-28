@@ -1,170 +1,192 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-const emailTemplates = {
-  promo: {
-    name: "🎁 Khuyến mãi",
-    html: `
-      <h1 style="color:#e06c7f;">🌸 Ưu đãi đặc biệt!</h1>
-      <p>Giảm <strong>20%</strong> đơn hàng hoa tươi hôm nay 💐</p>
-    `,
-  },
-  holiday: {
-    name: "🎄 Dịp lễ / năm mới",
-    html: `
-      <h1 style="color:#e06c7f;">🎄 Chúc mừng năm mới!</h1>
-      <p>Hoa tươi giảm giá toàn bộ 15% tại DDT Flower Shop</p>
-    `,
-  },
-  birthday: {
-    name: "🎂 Sinh nhật",
-    html: `
-      <h1 style="color:#e06c7f;">🎂 Happy Birthday!</h1>
-      <p>🎁 Tặng voucher 10% cho ngày đặc biệt của bạn 💌</p>
-    `,
-  },
-  valentine: {
-    name: "❤️ Valentine",
-    html: `
-      <h1 style="color:#e06c7f;">❤️ Happy Valentine!</h1>
-      <p>💐 Gửi yêu thương cùng bó hoa rực rỡ</p>
-    `,
-  },
-  women: {
-    name: "💐 20/10 & 8/3",
-    html: `
-      <h1 style="color:#e06c7f;">💐 Tri ân phái đẹp!</h1>
-      <p>⚡ Giảm giá 30% duy nhất hôm nay</p>
-    `,
-  },
-};
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const SendEmailPage = () => {
   const [subject, setSubject] = useState("");
-  const [template, setTemplate] = useState("promo");
-  const [customHtml, setCustomHtml] = useState("");
-  const [targetGroup, setTargetGroup] = useState("subscribed"); // ⭐ NEW
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState("");
+  const [group, setGroup] = useState("all");
+  const [templateName, setTemplateName] = useState("promo");
+  const [htmlContent, setHtmlContent] = useState("");
+  const [resultMsg, setResultMsg] = useState(null);
 
-  const token = localStorage.getItem("adminToken");
-
-  const handleSend = async () => {
-    setSending(true);
-    setMessage("");
-
-    try {
-      const res = await fetch("http://localhost:5000/api/email/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          subject,
-          group: targetGroup,
-          html:
-            template === "custom"
-              ? customHtml
-              : emailTemplates[template].html,
-        }),
-      });
-
-      const data = await res.json();
-      setMessage(data.message || "Email đã được gửi!");
-    } catch (err) {
-      console.error(err);
-      setMessage("❌ Gửi email thất bại");
-    }
-
-    setSending(false);
+  // Templates mẫu
+  const templates = {
+    promo: `
+      <h2>🎉 Ưu đãi đặc biệt!</h2>
+      <p>Giảm 20% tất cả sản phẩm tuần này!</p>
+    `,
+    holiday: `
+      <h2>🌸 Quà tặng ngày lễ!</h2>
+      <p>Hoa tươi giảm giá cho các dịp lễ hội.</p>
+    `,
+    custom: ""
   };
 
-  const previewHtml =
-    template === "custom"
-      ? customHtml || "<p>Nhập nội dung HTML...</p>"
-      : emailTemplates[template].html;
+  useEffect(() => {
+    if (templateName !== "custom") {
+      setHtmlContent(templates[templateName]);
+    }
+  }, [templateName]);
+
+  // ===============================
+  //      GỬI EMAIL MARKETING
+  // ===============================
+  const sendEmail = async () => {
+    console.log(">>> CLICK WORKING");
+
+    setResultMsg(null);
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setResultMsg({
+        type: "error",
+        text: "❌ Bạn chưa đăng nhập (không có token).",
+      });
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        `${API_URL}/api/email/send`,
+        {
+          subject,
+          group,
+          html: htmlContent,
+          templateName,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setResultMsg({ type: "success", text: res.data.message });
+    } catch (err) {
+      console.log("Email send error:", err);
+      setResultMsg({
+        type: "error",
+        text: "❌ Không thể gửi email. Kiểm tra backend console!",
+      });
+    }
+  };
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-[#e06c7f] mb-8">
+    <div style={{ padding: "40px" }}>
+      <h1 style={{ fontSize: "26px", fontWeight: "700", color: "#d14b6a" }}>
         📩 Gửi Email Marketing
       </h1>
 
-      <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl">
-        {/* Subject */}
-        <label className="font-medium">Tiêu đề Email</label>
-        <input
-          className="w-full border p-3 rounded-lg mb-4"
-          placeholder="Nhập tiêu đề email"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-        />
-
-        {/* Target Group */}
-        <label className="font-medium">Gửi tới nhóm khách hàng 👥</label>
-        <select
-          className="w-full border p-3 rounded-lg mb-4"
-          value={targetGroup}
-          onChange={(e) => setTargetGroup(e.target.value)}
-        >
-          <option value="all">📢 Tất cả khách hàng</option>
-          <option value="subscribed">📰 Đăng ký nhận email</option>
-          <option value="vip">👑 Khách hàng VIP</option>
-        </select>
-
-        {/* Template selector */}
-        <label className="font-medium">Chọn mẫu email 📌</label>
-        <select
-          className="w-full border p-3 rounded-lg mb-4"
-          value={template}
-          onChange={(e) => setTemplate(e.target.value)}
-        >
-          {Object.entries(emailTemplates).map(([key, t]) => (
-            <option key={key} value={key}>
-              {t.name}
-            </option>
-          ))}
-          <option value="custom">✍️ Tự nhập nội dung</option>
-        </select>
-
-        {template === "custom" && (
-          <textarea
-            className="w-full border p-3 rounded-lg mb-4 h-40"
-            placeholder="Nhập HTML tùy chỉnh..."
-            value={customHtml}
-            onChange={(e) => setCustomHtml(e.target.value)}
-          />
-        )}
-
-        <button
-          onClick={handleSend}
-          disabled={sending}
-          className="w-full py-3 bg-[#e06c7f] hover:bg-[#d35d75] text-white font-semibold rounded-lg"
-        >
-          {sending ? "Đang gửi email..." : "📨 Gửi Email"}
-        </button>
-
-        {message && (
-          <div
-            className={`mt-4 p-3 rounded-lg ${
-              message.startsWith("❌")
-                ? "bg-red-100 text-red-700 border border-red-300"
-                : "bg-green-100 text-green-700 border border-green-300"
-            }`}
-          >
-            {message}
-          </div>
-        )}
-      </div>
-
-      {/* PREVIEW */}
-      <div className="mt-8 p-6 bg-[#faf8f6] border border-[#f0e8e3] rounded-xl">
-        <h2 className="text-xl font-semibold mb-3">📌 Preview email</h2>
-
+      {/* GRID: TRÁI FORM - PHẢI PREVIEW */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "40px",
+        marginTop: "30px",
+      }}>
+        {/* FORM TRÁI */}
         <div
-          className="border bg-white rounded-lg p-5 shadow-sm"
-          dangerouslySetInnerHTML={{ __html: previewHtml }}
-        />
+          style={{
+            background: "white",
+            padding: "25px",
+            borderRadius: "12px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
+          }}
+        >
+          <label>Tiêu đề Email</label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            style={{ width: "100%", marginTop: "8px", marginBottom: "20px", padding: "12px" }}
+          />
+
+          <label>Gửi đến nhóm</label>
+          <select
+            value={group}
+            onChange={(e) => setGroup(e.target.value)}
+            style={{ width: "100%", padding: "12px", marginBottom: "20px" }}
+          >
+            <option value="all">📢 Tất cả khách hàng</option>
+            <option value="user">👤 User</option>
+            <option value="admin">🛠 Admin</option>
+            <option value="newsletter">📬 Newsletter</option>
+            <option value="vip">💎 VIP</option>
+          </select>
+
+          <label>Mẫu email</label>
+          <select
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            style={{ width: "100%", padding: "12px", marginBottom: "20px" }}
+          >
+            <option value="promo">🎁 Khuyến mãi</option>
+            <option value="holiday">🎉 Ngày lễ</option>
+            <option value="custom">📝 Tùy chỉnh</option>
+          </select>
+
+          {templateName === "custom" && (
+            <textarea
+              rows="6"
+              value={htmlContent}
+              onChange={(e) => setHtmlContent(e.target.value)}
+              style={{ width: "100%", padding: "12px", marginBottom: "20px" }}
+            />
+          )}
+
+          <button
+            onClick={sendEmail}
+            style={{
+              width: "100%",
+              background: "#d86b7a",
+              padding: "15px",
+              borderRadius: "8px",
+              color: "white",
+              fontWeight: "bold",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            ✉ Gửi Email
+          </button>
+
+          {/* THÔNG BÁO */}
+          {resultMsg && (
+            <div
+              style={{
+                marginTop: "20px",
+                padding: "15px",
+                borderRadius: "8px",
+                background: resultMsg.type === "success" ? "#e8fff0" : "#ffe8e8",
+                color: resultMsg.type === "success" ? "#008f3c" : "#d10000",
+              }}
+            >
+              {resultMsg.text}
+            </div>
+          )}
+        </div>
+
+        {/* PREVIEW PHẢI */}
+        <div
+          style={{
+            background: "#faf7f7",
+            padding: "25px",
+            borderRadius: "12px",
+            border: "1px solid #eee",
+          }}
+        >
+          <h2>🔍 Preview</h2>
+
+          <div
+            style={{
+              marginTop: "20px",
+              background: "white",
+              padding: "20px",
+              borderRadius: "10px",
+              border: "1px solid #ddd",
+            }}
+            dangerouslySetInnerHTML={{ __html: htmlContent }}
+          />
+        </div>
       </div>
     </div>
   );

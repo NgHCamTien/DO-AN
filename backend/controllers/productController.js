@@ -2,114 +2,144 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const mongoose = require('mongoose');
 
-/* ============================================================
-   📦 GET ALL PRODUCTS (PUBLIC + ADMIN)
-============================================================ */
-const getProducts = async (req, res) => {
+// ============================================================
+// 📌 GET /api/products — FILTER + PAGINATION
+// ============================================================
+exports.getProducts = async (req, res) => {
   try {
-    const pageSize = 10;
-    const page = Number(req.query.page) || 1;
+    const {
+      search,
+      category,
+      price,
+      flower,
+      occasion,
+      page = 1
+    } = req.query;
 
-    const keyword = req.query.keyword
-      ? { name: { $regex: req.query.keyword, $options: 'i' } }
-      : {};
+    const pageSize = 12;
+    const filter = {};
 
-    let categoryFilter = {};
-    if (req.query.category) {
-      const categoryObj = await Category.findOne({ slug: req.query.category });
-      if (categoryObj) categoryFilter = { category: categoryObj._id };
+    // 🔍 SEARCH BY NAME
+    if (search && search.trim() !== "") {
+      filter.name = { $regex: search.trim(), $options: "i" };
     }
 
-    const filter = { ...keyword, ...categoryFilter };
-    const count = await Product.countDocuments(filter);
+    // 🏷 FILTER BY CATEGORY SLUG
+    if (category && category !== "all" && category !== "") {
+      const cat = await Category.findOne({ slug: category });
+      if (cat) filter.category = cat._id;
+    }
 
+    // 💰 PRICE FILTER
+    if (price === "under-200") filter.price = { $lte: 200000 };
+    if (price === "200-400") filter.price = { $gte: 200000, $lte: 400000 };
+    if (price === "above-400") filter.price = { $gte: 400000 };
+
+    // 🌸 FLOWER TYPE FILTER
+    if (flower) {
+      filter.flowerTypes = { $in: [flower] };
+    }
+
+    // 🎁 OCCASION FILTER
+    if (occasion) {
+      filter.occasion = occasion;
+    }
+
+    // 📦 COUNT TOTAL
+    const total = await Product.countDocuments(filter);
+
+    // 📦 GET PRODUCTS
     const products = await Product.find(filter)
-      .populate('category', 'name slug')
-      .limit(pageSize)
-      .skip(pageSize * (page - 1))
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
 
-    res.json({
+    return res.json({
       success: true,
       products,
+      total,
       page,
-      pages: Math.ceil(count / pageSize),
-      count
+      pages: Math.ceil(total / pageSize),
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+
+  } catch (err) {
+    console.error("❌ Error in getProducts:", err);
+    return res.status(500).json({ success: false, message: "Server error", error: err });
   }
 };
 
-/* ============================================================
-   🔍 GET PRODUCT BY ID (DETAIL PAGE)
-============================================================ */
-const getProductById = async (req, res) => {
+
+// ============================================================
+// 🔍 GET PRODUCT BY ID
+// ============================================================
+exports.getProductById = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ success: false, message: 'ID sản phẩm không hợp lệ' });
-    }
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).json({ success: false, message: "ID sản phẩm không hợp lệ" });
 
     const product = await Product.findById(req.params.id)
-      .populate('category', 'name slug');
+      .populate("category", "name slug");
 
     if (!product)
-      return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm' });
+      return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
 
-    res.json({ success: true, product }); // CHUẨN HÓA: data → product
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json({ success: true, product });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/* ============================================================
-   🌟 GET FEATURED PRODUCTS
-============================================================ */
-const getFeaturedProducts = async (req, res) => {
+
+// ============================================================
+// 🌟 FEATURED PRODUCTS
+// ============================================================
+exports.getFeaturedProducts = async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 8;
 
     const products = await Product.find({ isFeatured: true })
-      .populate('category', 'name slug')
+      .populate("category", "name slug")
       .limit(limit)
       .sort({ createdAt: -1 });
 
     res.json({ success: true, products });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/* ============================================================
-   🔗 GET RELATED PRODUCTS
-============================================================ */
-const getRelatedProducts = async (req, res) => {
+
+// ============================================================
+// 🔗 RELATED PRODUCTS
+// ============================================================
+exports.getRelatedProducts = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
-      return res.status(400).json({ success: false, message: 'ID sản phẩm không hợp lệ' });
+      return res.status(400).json({ success: false, message: "ID sản phẩm không hợp lệ" });
 
     const product = await Product.findById(req.params.id);
     if (!product)
-      return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm' });
+      return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
 
     const relatedProducts = await Product.find({
       _id: { $ne: product._id },
       category: product.category,
-      isActive: true
+      isActive: true,
     })
-      .populate('category', 'name slug')
-      .limit(4);
+      .limit(4)
+      .populate("category", "name slug");
 
     res.json({ success: true, products: relatedProducts });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/* ============================================================
-   ➕ CREATE PRODUCT
-============================================================ */
-const createProduct = async (req, res) => {
+
+// ============================================================
+// ➕ CREATE PRODUCT
+// ============================================================
+exports.createProduct = async (req, res) => {
   try {
     const {
       name,
@@ -128,18 +158,15 @@ const createProduct = async (req, res) => {
 
     const category = await Category.findById(categoryId);
     if (!category)
-      return res.status(400).json({ success: false, message: 'Danh mục không hợp lệ' });
+      return res.status(400).json({ success: false, message: "Danh mục không hợp lệ" });
 
-    // xử lý images
     let imgs = [];
     if (Array.isArray(images)) {
       imgs = images.map(url =>
-        url.startsWith('/uploads/') || url.startsWith('http')
-          ? url
-          : `/uploads/${url}`
+        url.startsWith("/uploads/") ? url : `/uploads/${url}`
       );
     } else if (image) {
-      imgs = [image.startsWith('/uploads/') ? image : `/uploads/${image}`];
+      imgs = [image.startsWith("/uploads/") ? image : `/uploads/${image}`];
     }
 
     const product = new Product({
@@ -152,150 +179,88 @@ const createProduct = async (req, res) => {
       isFeatured: !!isFeatured,
       flowerTypes: Array.isArray(flowerTypes)
         ? flowerTypes
-        : String(flowerTypes || '').split(',').map(f => f.trim()),
-      season: season || 'Quanh năm',
+        : String(flowerTypes || "").split(",").map(f => f.trim()),
+      season: season || "Quanh năm",
       stock: Number(stock) || 0,
       tags: tags
-        ? (Array.isArray(tags) ? tags : String(tags).split(',').map(t => t.trim()))
-        : []
+        ? (Array.isArray(tags) ? tags : String(tags).split(",").map(t => t.trim()))
+        : [],
     });
 
-    const createdProduct = await product.save();
-    res.status(201).json({ success: true, product: createdProduct });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const created = await product.save();
+    res.status(201).json({ success: true, product: created });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/* ============================================================
-   ✏️ UPDATE PRODUCT
-============================================================ */
-const updateProduct = async (req, res) => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ success: false, message: 'ID sản phẩm không hợp lệ' });
-    }
 
-    const product = await Product.findById(req.params.id);
-    if (!product)
-      return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm' });
-
-    const {
-      name,
-      description,
-      price,
-      discountPrice,
-      categoryId,
-      isFeatured,
-      season,
-      stock,
-      tags,
-      image,
-      images,
-      flowerTypes
-    } = req.body;
-
-    if (name) product.name = name;
-    if (description) product.description = description;
-    if (price !== undefined) product.price = price;
-    if (discountPrice !== undefined) product.discountPrice = discountPrice;
-    if (isFeatured !== undefined) product.isFeatured = isFeatured;
-    if (season !== undefined) product.season = season;
-    if (stock !== undefined) product.stock = Number(stock);
-
-    if (flowerTypes !== undefined) {
-      product.flowerTypes = Array.isArray(flowerTypes)
-        ? flowerTypes
-        : String(flowerTypes).split(',').map(f => f.trim());
-    }
-
-    if (categoryId) {
-      const category = await Category.findById(categoryId);
-      if (!category)
-        return res.status(400).json({ success: false, message: 'Danh mục không hợp lệ' });
-
-      product.category = categoryId;
-    }
-
-    if (tags !== undefined)
-      product.tags = Array.isArray(tags)
-        ? tags
-        : String(tags).split(',').map(t => t.trim());
-
-    // Xử lý ảnh
-    if (Array.isArray(images) && images.length > 0) {
-      product.images = images.map(url =>
-        url.startsWith('/uploads/') || url.startsWith('http')
-          ? url
-          : `/uploads/${url}`
-      );
-    } else if (image) {
-      product.images = [image.startsWith('/uploads/') ? image : `/uploads/${image}`];
-    }
-
-    const updatedProduct = await product.save();
-
-    res.json({ success: true, product: updatedProduct });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-/* ============================================================
-   ❌ DELETE PRODUCT
-============================================================ */
-const deleteProduct = async (req, res) => {
+// ============================================================
+// ✏️ UPDATE PRODUCT
+// ============================================================
+exports.updateProduct = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
-      return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return res.status(400).json({ success: false, message: "ID không hợp lệ" });
 
     const product = await Product.findById(req.params.id);
     if (!product)
-      return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm' });
+      return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
+
+    const body = req.body;
+
+    Object.assign(product, body);
+
+    await product.save();
+    res.json({ success: true, product });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// ============================================================
+// 🗑 DELETE
+// ============================================================
+exports.deleteProduct = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).json({ success: false, message: "ID không hợp lệ" });
+
+    const product = await Product.findById(req.params.id);
+    if (!product)
+      return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
 
     await product.deleteOne();
 
-    res.json({
-      success: true,
-      message: 'Đã xóa sản phẩm',
-      deletedProduct: { id: product._id, name: product.name }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json({ success: true, message: "Đã xóa sản phẩm" });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/* ============================================================
-   📦 ADJUST STOCK
-============================================================ */
-const adjustStock = async (req, res) => {
+
+// ============================================================
+// 📦 ADJUST STOCK
+// ============================================================
+exports.adjustStock = async (req, res) => {
   try {
     const { delta } = req.body;
-    const product = await Product.findById(req.params.id);
 
+    const product = await Product.findById(req.params.id);
     if (!product)
-      return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm' });
+      return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
 
     product.stock = Math.max(0, product.stock + Number(delta || 0));
+
     await product.save();
 
     res.json({ success: true, product });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
-/* ============================================================
-   📤 EXPORT MODULES
-============================================================ */
-module.exports = {
-  getAllProducts: getProducts,
-  getProducts,
-  getProductById,
-  getFeaturedProducts,
-  getRelatedProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  adjustStock
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };

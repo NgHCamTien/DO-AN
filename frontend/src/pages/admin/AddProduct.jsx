@@ -206,7 +206,7 @@ const AddProduct = () => {
             </div>
           </div>
 
-          {/* Mô tả ngắn */}
+          {/* Mô tả ngắn
           <div>
             <label className="block font-medium text-gray-700 mb-1">Chi tiết sản phẩm</label>
             <textarea
@@ -216,7 +216,7 @@ const AddProduct = () => {
               placeholder="Mô tả ngắn gọn về sản phẩm..."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
             />
-          </div>
+          </div> */}
 
           {/* Danh mục + Giá */}
           <div className="grid grid-cols-2 gap-6">
@@ -250,6 +250,21 @@ const AddProduct = () => {
               />
             </div>
           </div>
+          {/* Tồn kho */}
+<div className="mt-4">
+  <label className="block font-medium text-gray-700 mb-1">Tồn kho *</label>
+  <input
+    type="number"
+    min="0"
+    value={stock}
+    onChange={(e) => setStock(e.target.value)}
+    placeholder="Nhập số lượng tồn"
+    className="w-full border border-gray-300 rounded-lg px-3 py-2
+           focus:border-purple-400 focus:ring focus:ring-purple-100 
+           outline-none transition"
+  />
+</div>
+
           {/* 🌸 Loại hoa (1 dòng) */}
           <div>
             <label className="block font-medium text-gray-700 mb-1">Loại hoa</label>
@@ -290,6 +305,58 @@ const AddProduct = () => {
             </div>
             <p className="text-sm text-gray-500 mt-1">🌺 Chọn hoặc nhập loại hoa mới rồi nhấn Enter</p>
           </div>
+{/* Mùa hoa */}
+<div>
+  <label className="block font-medium text-gray-700 mb-1">Mùa hoa</label>
+  <select
+    value={season}
+    onChange={(e) => setSeason(e.target.value)}
+    className="w-full border border-gray-300 rounded-lg px-3 py-2
+           focus:border-pink-400 focus:ring focus:ring-pink-100
+           outline-none transition"
+  >
+    <option value="Quanh năm">Quanh năm</option>
+    <option value="Xuân">Xuân</option>
+    <option value="Hè">Hè</option>
+    <option value="Thu">Thu</option>
+    <option value="Đông">Đông</option>
+  </select>
+</div>
+{/* Tags sản phẩm */}
+<div>
+  <label className="block font-medium text-gray-700 mb-1">Tags</label>
+  <input
+    type="text"
+    value={tagsInput}
+    onChange={(e) => setTagsInput(e.target.value)}
+    placeholder="Nhập tag, ví dụ: sinh nhật, tình yêu, khai trương..."
+    className="w-full border border-gray-300 rounded-lg px-3 py-2 
+           focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+  />
+
+  {/* Hiển thị danh sách tags */}
+  <div className="flex flex-wrap gap-2 mt-2">
+    {tags.map((tag, i) => (
+      <span
+        key={i}
+        className="flex items-center gap-1 bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-sm shadow"
+      >
+        {tag}
+        <button
+          type="button"
+          onClick={() => setTags(tags.filter((_, idx) => idx !== i))}
+          className="text-red-500 hover:text-red-700"
+        >
+          ✕
+        </button>
+      </span>
+    ))}
+  </div>
+
+  <p className="text-sm text-gray-500 mt-1">
+    Gợi ý: nhập nhiều tag bằng dấu phẩy. Ví dụ: <i>lãng mạn, sinh nhật, tốt nghiệp</i>
+  </p>
+</div>
 
           {/* Giá khuyến mãi + thời gian */}
           <div className="grid grid-cols-2 gap-6">
@@ -347,7 +414,7 @@ const AddProduct = () => {
             </div>
           </div>
 
-          {/* Mô tả đầy đủ */}
+          Mô tả đầy đủ
           <div>
             <label className="block font-medium text-gray-700 mb-1">Mô tả *</label>
             <textarea

@@ -8,7 +8,7 @@ import AdminDashboard from "../pages/admin/Dashboard";
 import AdminProducts from "../pages/admin/Products";
 import AddProduct from "../pages/admin/AddProduct";
 import EditProduct from "../pages/admin/EditProduct";
-import AdminOrders from "../pages/admin/Orders";
+import AdminOrders from "../pages/admin/AdminOrders";
 import AdminCategories from "../pages/admin/Categories";
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminNotifications from "../pages/admin/AdminNotifications";

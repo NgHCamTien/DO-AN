@@ -3,6 +3,9 @@ const router = express.Router();
 const Notification = require("../models/Notification");
 const { protect, admin } = require("../middleware/authMiddleware");
 
+// 👇 THÊM DÒNG NÀY
+const { deleteNotification } = require("../controllers/notificationController");
+
 // 📌 Lấy tất cả thông báo (Admin)
 router.get("/", protect, admin, async (req, res) => {
   try {
@@ -38,7 +41,8 @@ router.put("/mark-all", protect, admin, async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-// xóa 
+
+// 📌 Xóa thông báo
 router.delete("/:id", protect, admin, deleteNotification);
 
 module.exports = router;

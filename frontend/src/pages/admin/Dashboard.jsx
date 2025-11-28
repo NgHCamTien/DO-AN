@@ -8,27 +8,60 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-    setRecentOrders([]);
-    setLoading(false);
-  }, []);
+useEffect(() => {
+  fetchStats();
+  fetchRecentOrders();
+}, []);
 
-  const fetchStats = async () => {
-    try {
-      const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
-      const res = await fetch('http://localhost:5000/api/products', {
+const fetchStats = async () => {
+  try {
+    const token = JSON.parse(localStorage.getItem("userInfo"))?.token;
+
+    const [resProducts, resOrders] = await Promise.all([
+      fetch("http://localhost:5000/api/products", {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setStats({
-        products: data.count || data.products?.length || 0,
-        orders: 0,
-      });
-    } catch {
-      setStats({ products: 0, orders: 0 });
-    }
-  };
+      }),
+      fetch("http://localhost:5000/api/orders", {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    ]);
+
+    const productsData = await resProducts.json();
+    const ordersData = await resOrders.json();
+
+    setStats({
+      products: productsData.count || productsData.products?.length || 0,
+      orders: ordersData.data?.length || 0,
+    });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
+const fetchRecentOrders = async () => {
+  try {
+    const token = JSON.parse(localStorage.getItem("userInfo"))?.token;
+
+    const res = await fetch("http://localhost:5000/api/orders", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await res.json();
+    const list = data.data || [];
+
+    // Sắp xếp theo createdAt DESC
+    const sorted = list.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    setRecentOrders(sorted.slice(0, 5));
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-white text-[#2c2c2c] font-sans">

@@ -7,6 +7,9 @@ const connectDB = require('./config/db');
 const cron = require("node-cron");
 const axios = require("axios");
 
+
+require("./services/emailService");
+
 dotenv.config();
 connectDB();
 

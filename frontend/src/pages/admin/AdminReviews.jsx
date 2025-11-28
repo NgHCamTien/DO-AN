@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE = "http://localhost:5000/api/reviews";
 
@@ -8,6 +9,7 @@ const AdminReviews = () => {
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
   const [activeReview, setActiveReview] = useState(null);
+    const navigate = useNavigate();
 
   useEffect(() => {
     fetchReviews();
@@ -34,36 +36,42 @@ const AdminReviews = () => {
     setLoading(false);
   };
 
-  const submitReply = async () => {
-    if (!activeReview) return;
+ const submitReply = async () => {
+  if (!activeReview) return;
 
-    try {
-      await axios.put(
-        `${API_BASE}/${activeReview._id}/reply`,
-        { reply: replyText },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+  try {
+    // Lấy token đúng format (tự động detect)
+    const userData =
+      JSON.parse(localStorage.getItem("userInfo")) ||
+      JSON.parse(localStorage.getItem("user")) ||
+      {};
 
-      alert("Phản hồi thành công!");
-      setReplyText("");
-      setActiveReview(null);
-      fetchReviews();
-    } catch (err) {
-      console.error("❌ Lỗi reply:", err);
-      alert("Không thể phản hồi.");
+    const token = userData?.token || localStorage.getItem("token");
+
+    if (!token) {
+      alert("Bạn chưa đăng nhập Admin! Không thể phản hồi.");
+      return;
     }
-  };
 
-  if (loading)
-    return (
-      <div className="text-center mt-20 text-pink-600 text-lg animate-pulse">
-        Đang tải đánh giá...
-      </div>
+    await axios.put(
+      `${API_BASE}/${activeReview._id}/reply`,
+      { reply: replyText },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
+
+    alert("Phản hồi thành công!");
+    setReplyText("");
+    setActiveReview(null);
+    fetchReviews();
+  } catch (err) {
+    console.error("❌ Lỗi reply:", err);
+    alert("Không thể phản hồi.");
+  }
+};
 
   return (
     <div className="p-2">
@@ -109,6 +117,14 @@ const AdminReviews = () => {
             >
               💬 Trả lời
             </button>
+            <button
+            className="mt-4 ml-3 px-4 py-1.5 bg-white text-[#e06c7f] border border-[#e06c7f] text-sm rounded-full shadow hover:bg-[#ffe6eb] transition"
+            onClick={() => navigate(`/product/${rv.product}`)}
+            >
+            🔍 Xem sản phẩm
+            </button>
+
+
           </div>
         ))}
       </div>

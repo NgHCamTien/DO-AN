@@ -77,7 +77,8 @@ const Login = () => {
           localStorage.setItem("userInfo", JSON.stringify(userToSave));
           setUser(userToSave);
 
-          navigate(userToSave.role === "admin" ? "/admin" : "/");
+          navigate(userToSave.role === "admin" ? "/admin/dashboard" : "/");
+
         } else {
           setError("Không thể đăng nhập bằng Google.");
         }

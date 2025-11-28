@@ -1,8 +1,12 @@
 import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { useContext } from "react";
 const AdminLayout = () => {
   const location = useLocation();
+const navigate = useNavigate();
+const { setUser } = useContext(AuthContext);
 
   const menuGroups = [
     {
@@ -41,6 +45,11 @@ const AdminLayout = () => {
       ],
     },
   ];
+const handleLogout = () => {
+  localStorage.removeItem("userInfo");
+  setUser(null);
+  navigate("/login");
+};
 
   return (
     <div className="flex min-h-screen font-sans bg-[#fff] text-[14px] leading-relaxed text-[#3e2f2f]">
@@ -107,10 +116,17 @@ const AdminLayout = () => {
         <div className="p-3">
           <a
             href="/"
-            className="block text-center bg-[#8b5e3c] text-white py-2 rounded-md text-sm font-semibold hover:bg-[#a56c44] transition"
+            className="block text-center bg-[#e06c7f] text-white py-2 rounded-md text-sm font-semibold hover:bg-[#a56c44] transition"
           >
             🌸 Xem trang web
           </a>
+          <button
+          onClick={handleLogout}
+          className="w-full mt-2 text-center bg-[#e06c7f] text-white py-2 rounded-md text-sm font-semibold hover:bg-[#cc5f72] transition"
+        >
+          🔒 Đăng xuất
+        </button>
+
         </div>
       </aside>
 

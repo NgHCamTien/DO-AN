@@ -50,32 +50,17 @@ export const authAPI = {
 };
 
 // Products API
+// Products API
 export const productAPI = {
-  // Lấy tất cả sản phẩm (có phân trang và lọc)
-  getProducts: (keyword = '', page = 1, category = '') => {
-    const params = new URLSearchParams();
-    if (keyword) params.append('keyword', keyword);
-    if (page) params.append('page', page);
-    if (category && category !== 'all') params.append('category', category);
-    
-    return api.get(`/products?${params.toString()}`);
+  // Lấy sản phẩm có filter
+  getProducts: (params) => {
+    return api.get("/products", { params });
   },
+
+
   
   // Tìm kiếm sản phẩm với nhiều tham số
-  searchProducts: (searchParams) => {
-    const { keyword, category, page = 1, sort, minPrice, maxPrice } = searchParams;
-    const params = new URLSearchParams();
-    
-    if (keyword) params.append('keyword', keyword);
-    if (category && category !== 'all') params.append('category', category);
-    if (page) params.append('page', page);
-    if (sort) params.append('sort', sort);
-    if (minPrice) params.append('minPrice', minPrice);
-    if (maxPrice) params.append('maxPrice', maxPrice);
-    
-    return api.get(`/products/search?${params.toString()}`);
-  },
-  
+
   // Lấy gợi ý tìm kiếm
   getSearchSuggestions: (query) => {
     return api.get(`/products/search-suggestions?q=${encodeURIComponent(query)}`);
@@ -196,11 +181,20 @@ export const couponAPI = {
   // Xóa mã giảm giá (admin)
   deleteCoupon: (code) => api.delete(`/coupons/${code}`)
 };
+// Email Marketing API
+export const emailAPI = {
+  // Gửi email marketing
+  sendMarketingEmail: (data) => api.post('/email/send', data),
+
+  // Lịch sử email
+  getEmailHistory: () => api.get('/email/history'),
+};
 
 export default {
   auth: authAPI,
   products: productAPI,
   categories: categoryAPI,
   orders: orderAPI,
-  coupons: couponAPI
+  coupons: couponAPI,
+  email: emailAPI,
 };

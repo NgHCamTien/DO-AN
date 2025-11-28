@@ -22,6 +22,7 @@ import ResetPassword from './pages/ResetPassword';
 import AdminRoutes from './routes/AdminRoutes';
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminNotifications from "./pages/admin/AdminNotifications";
+import SendEmailPage from "./pages/admin/SendEmailPage";
 function App() {
   return (
     // ✅ Bọc toàn bộ app trong GoogleOAuthProvider
@@ -43,6 +44,10 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/thank-you" element={<ThankYou />} />
                 <Route path="/auth/facebook/callback" element={<FacebookCallback />} />
+
+                {/* Admin pages email */}
+                <Route path="/admin/email-send" element={<SendEmailPage />} />
+
                 {/* Forgot / Reset password */}
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />

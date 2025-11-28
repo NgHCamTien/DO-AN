@@ -28,10 +28,13 @@ exports.markAsRead = async (req, res) => {
 // 📌 Xóa thông báo
 exports.deleteNotification = async (req, res) => {
   try {
-    const noti = await Notification.findById(req.params.id);
-    if (!noti) return res.status(404).json({ success: false, message: "Không tìm thấy" });
+    const { id } = req.params;
 
-    await noti.deleteOne();
+    const deleted = await Notification.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy thông báo" });
+    }
 
     res.json({ success: true, message: "Đã xóa thông báo" });
   } catch (err) {
