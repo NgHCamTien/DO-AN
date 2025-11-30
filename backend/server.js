@@ -68,6 +68,7 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/users', userRoutes);
+app.use("/api/email", require("./routes/emailRecipients"));
 
 // ADMIN routes
 app.use('/api/upload', uploadRoutes);
@@ -79,7 +80,7 @@ app.use("/api/notifications", notificationRoutes);
 
 // Test
 app.get('/', (req, res) => {
-  res.json({ message: '🌸 DTP Flower Shop API is running...' });
+  res.json({ message: '🌸 DDT Flower Shop API is running...' });
 });
 
 // 404 Handler

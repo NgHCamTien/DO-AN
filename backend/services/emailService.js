@@ -1,14 +1,12 @@
 const nodemailer = require("nodemailer");
 
-// =========================
-// 1. CHỌN TRANSPORT TỰ ĐỘNG
-// =========================
-
+// =====================================
+// 1. TỰ ĐỘNG CHỌN TRANSPORT
+// =====================================
 const getTransporter = async () => {
-
-  // Ưu tiên 1: GMAIL SMTP (Gửi email thật)
+  // --- Ưu tiên: Gmail App Password ---
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    console.log("🔗 Email: dùng Gmail SMTP");
+    console.log("📡 Đang dùng Gmail SMTP để gửi email...");
     return {
       transporter: nodemailer.createTransport({
         service: "gmail",
@@ -22,9 +20,9 @@ const getTransporter = async () => {
     };
   }
 
-  // Ưu tiên 2: Mailtrap (dev / test)
+  // --- Mailtrap (nếu Tiên bật lại) ---
   if (process.env.MAILTRAP_USER && process.env.MAILTRAP_PASS) {
-    console.log("🔗 Email: dùng Mailtrap (test)");
+    console.log("📡 Đang dùng Mailtrap (test)");
     return {
       transporter: nodemailer.createTransport({
         host: "sandbox.smtp.mailtrap.io",
@@ -39,14 +37,13 @@ const getTransporter = async () => {
     };
   }
 
-  // Ưu tiên 3: SendGrid (gửi email thật)
+  // --- SendGrid ---
   if (process.env.SENDGRID_API_KEY) {
-    console.log("🔗 Email: dùng SendGrid");
+    console.log("📡 Đang dùng SendGrid");
     return {
       transporter: nodemailer.createTransport({
         host: "smtp.sendgrid.net",
         port: 587,
-        secure: false,
         auth: {
           user: "apikey",
           pass: process.env.SENDGRID_API_KEY,
@@ -57,15 +54,14 @@ const getTransporter = async () => {
     };
   }
 
-  // Ưu tiên 4: Ethereal (test)
-  console.log("🔗 Email: dùng Ethereal (test)");
+  // --- Ethereal (fallback test) ---
+  console.log("📡 Dùng Ethereal (test mode)");
   const testAccount = await nodemailer.createTestAccount();
 
   return {
     transporter: nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
-      secure: false,
       auth: {
         user: testAccount.user,
         pass: testAccount.pass,
@@ -76,58 +72,55 @@ const getTransporter = async () => {
   };
 };
 
-// =========================
+// =====================================
 // 2. TEMPLATE EMAIL CHÀO MỪNG
-// =========================
+// =====================================
+const getWelcomeEmailHTML = (userName) => `
+  <h2>🌸 Xin chào ${userName}!</h2>
+  <p>Cảm ơn bạn đã đăng ký tại <b>DDT Flower Shop</b>.</p>
+  <p>Chúc bạn một ngày thật tuyệt vời!</p>
+`;
 
-const getWelcomeEmailHTML = (userName, userEmail) => {
-  return `
-    <h1>Xin chào ${userName}!</h1>
-    <p>Chào mừng bạn đến với DTP Flower Shop</p>
-  `;
-};
-
-// =========================
-// 3. HÀM GỬI EMAIL CHÀO MỪNG
-// =========================
-
+// =====================================
+// 3. GỬI EMAIL CHÀO MỪNG
+// =====================================
 const sendWelcomeEmail = async (userEmail, userName) => {
   try {
-    console.log(`📧 Gửi email chào mừng tới ${userEmail}`);
-
     const { transporter, method } = await getTransporter();
 
     const info = await transporter.sendMail({
-      from: `"DTP Flower Shop" <${process.env.EMAIL_USER}>`,
+      from: `"DDT Flower Shop" <${process.env.EMAIL_USER}>`,
       to: userEmail,
-      subject: "🌸 Chào mừng bạn đến với DTP Flower Shop!",
-      html: getWelcomeEmailHTML(userName, userEmail),
+      subject: "🌸 Chào mừng bạn đến với DDT Flower Shop!",
+      html: getWelcomeEmailHTML(userName),
     });
 
-    console.log(`✅ Gửi email thành công qua ${method}`, info.messageId);
-
+    console.log(`✅ Email gửi thành công (${method}):`, info.messageId);
     return { success: true };
   } catch (error) {
-    console.error("❌ Lỗi gửi email:", error.message);
+    console.error("❌ Lỗi gửi email:", error);
     return { success: false, error: error.message };
   }
 };
 
-const sendCustomEmail = async (email, name, subject, htmlTemplate) => {
+// =====================================
+// 4. GỬI EMAIL MARKETING / TÙY CHỈNH
+// =====================================
+const sendCustomEmail = async (email, subject, htmlContent) => {
   try {
     const { transporter } = await getTransporter();
 
     const info = await transporter.sendMail({
-      from: `"DTP Flower Shop" <${process.env.EMAIL_USER}>`,
+      from: `"DDT Flower Shop" <${process.env.EMAIL_USER}>`,
       to: email,
       subject,
-      html: htmlTemplate,
+      html: htmlContent,
     });
 
     return { success: true, info };
   } catch (error) {
-    console.error("❌ Lỗi gửi email custom:", error.message);
-    return { success: false };
+    console.error("❌ Lỗi gửi email custom:", error);
+    return { success: false, error: error.message };
   }
 };
 

@@ -16,7 +16,7 @@ const sendOrderConfirmation = async (user, order) => {
     const message = {
       from: EMAIL_USER,
       to: user.email,
-      subject: 'Xác nhận đơn hàng - DTP Flower Shop',
+      subject: 'Xác nhận đơn hàng - DDT Flower Shop',
       html: `
         <h1>Cảm ơn bạn đã đặt hàng, ${user.name}!</h1>
         <p>Đơn hàng của bạn đã được xác nhận và đang được xử lý.</p>
@@ -30,7 +30,7 @@ const sendOrderConfirmation = async (user, order) => {
         <p><strong>Địa chỉ giao hàng:</strong> ${order.shippingAddress.address}, ${order.shippingAddress.city}</p>
         <p><strong>Phương thức thanh toán:</strong> ${order.paymentMethod}</p>
         <p>Chúng tôi sẽ thông báo cho bạn khi đơn hàng được giao.</p>
-        <p>Trân trọng,<br>DTP Flower Shop</p>
+        <p>Trân trọng,<br>DDT Flower Shop</p>
       `
     };
     

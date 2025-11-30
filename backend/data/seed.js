@@ -18,7 +18,7 @@ connectDB();
 const users = [
   {
     name: 'Admin',
-    email: 'nguyenhongcamtien694@gmail.com',
+    email: '@ddtflowershopgmail.com',
     password: bcrypt.hashSync('123456', 10), // 🔥 Hash đúng chuẩn
     role: 'admin'
   }

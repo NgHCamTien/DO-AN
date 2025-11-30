@@ -10,34 +10,66 @@ const SendEmailPage = () => {
   const [htmlContent, setHtmlContent] = useState("");
   const [resultMsg, setResultMsg] = useState(null);
 
-  // Templates mẫu
+  // --- Email người nhận ---
+  const [recipientEmails, setRecipientEmails] = useState([]);
+  const [showEmailPopup, setShowEmailPopup] = useState(false);
+
+  // 📌 Mẫu email
   const templates = {
     promo: `
       <h2>🎉 Ưu đãi đặc biệt!</h2>
-      <p>Giảm 20% tất cả sản phẩm tuần này!</p>
+      <p>Giảm 20% cho tất cả sản phẩm trong tuần này!</p>
     `,
     holiday: `
       <h2>🌸 Quà tặng ngày lễ!</h2>
-      <p>Hoa tươi giảm giá cho các dịp lễ hội.</p>
+      <p>Ưu đãi dành riêng cho các dịp lễ hội.</p>
     `,
-    custom: ""
+    custom: "",
   };
 
+  // Khi đổi template
   useEffect(() => {
     if (templateName !== "custom") {
       setHtmlContent(templates[templateName]);
     }
   }, [templateName]);
 
-  // ===============================
-  //      GỬI EMAIL MARKETING
-  // ===============================
-  const sendEmail = async () => {
-    console.log(">>> CLICK WORKING");
+  // --------------------------------------------------
+  // 📌 LẤY DANH SÁCH EMAIL THEO NHÓM
+  // --------------------------------------------------
+  useEffect(() => {
+    fetchRecipientEmails();
+  }, [group]);
 
+  const fetchRecipientEmails = async () => {
+    const storedUser = JSON.parse(localStorage.getItem("userInfo"));
+    const token = storedUser?.token;
+
+    if (!token) return;
+
+    try {
+      const res = await axios.get(
+        `${API_URL}/api/email/recipients?group=${group}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setRecipientEmails(res.data.emails || []);
+    } catch (err) {
+      console.log("Lỗi lấy danh sách email: ", err);
+    }
+  };
+
+  // --------------------------------------------------
+  // 📩 GỬI EMAIL MARKETING
+  // --------------------------------------------------
+  const sendEmail = async () => {
     setResultMsg(null);
 
-    const token = localStorage.getItem("token");
+    const storedUser = JSON.parse(localStorage.getItem("userInfo"));
+    const token = storedUser?.token;
+
     if (!token) {
       setResultMsg({
         type: "error",
@@ -65,25 +97,38 @@ const SendEmailPage = () => {
       console.log("Email send error:", err);
       setResultMsg({
         type: "error",
-        text: "❌ Không thể gửi email. Kiểm tra backend console!",
+        text: "❌ Không thể gửi email. Vui lòng kiểm tra backend!",
       });
     }
   };
 
+  // --------------------------------------------------
+  // 🖼️ GIAO DIỆN
+  // --------------------------------------------------
   return (
     <div style={{ padding: "40px" }}>
-      <h1 style={{ fontSize: "26px", fontWeight: "700", color: "#d14b6a" }}>
+      <h1
+        style={{
+          fontSize: "26px",
+          fontWeight: "700",
+          color: "#d14b6a",
+          marginBottom: "20px",
+        }}
+      >
         📩 Gửi Email Marketing
       </h1>
 
-      {/* GRID: TRÁI FORM - PHẢI PREVIEW */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "40px",
-        marginTop: "30px",
-      }}>
-        {/* FORM TRÁI */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "40px",
+          marginTop: "30px",
+        }}
+      >
+        {/* ======================================================
+            FORM TRÁI
+        ====================================================== */}
         <div
           style={{
             background: "white",
@@ -92,32 +137,92 @@ const SendEmailPage = () => {
             boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
           }}
         >
+          {/* Tiêu đề email */}
           <label>Tiêu đề Email</label>
           <input
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            style={{ width: "100%", marginTop: "8px", marginBottom: "20px", padding: "12px" }}
+            placeholder="Nhập tiêu đề email…"
+            style={{
+              width: "100%",
+              marginTop: "8px",
+              marginBottom: "20px",
+              padding: "12px",
+              borderRadius: "8px",
+              border: "1px solid #f1e4da",
+            }}
           />
 
+          {/* Gửi đến nhóm */}
           <label>Gửi đến nhóm</label>
           <select
             value={group}
             onChange={(e) => setGroup(e.target.value)}
-            style={{ width: "100%", padding: "12px", marginBottom: "20px" }}
+            style={{
+              width: "100%",
+              padding: "12px",
+              marginBottom: "20px",
+              border: "1px solid #f1e4da",
+              borderRadius: "8px",
+            }}
           >
             <option value="all">📢 Tất cả khách hàng</option>
-            <option value="user">👤 User</option>
-            <option value="admin">🛠 Admin</option>
-            <option value="newsletter">📬 Newsletter</option>
-            <option value="vip">💎 VIP</option>
+            <option value="user">👤 Người dùng</option>
+            <option value="admin">🛠 Quản trị viên</option>
+            <option value="newsletter">📬 Đăng ký nhận tin</option>
+            <option value="vip">💎 Khách VIP</option>
           </select>
 
+          {/* ===== HIỂN THỊ DANH SÁCH EMAIL ===== */}
+          {recipientEmails.length > 0 && (
+            <div
+              style={{
+                margin: "10px 0",
+                padding: "12px",
+                background: "#faf8f6",
+                border: "1px solid #f1e4da",
+                borderRadius: "8px",
+                fontSize: "14px",
+                color: "#8b5e3c",
+              }}
+            >
+              <b>📧 Số email sẽ gửi:</b> {recipientEmails.length}
+              <br />
+
+              {recipientEmails.slice(0, 3).map((mail, i) => (
+                <div key={i}>• {mail}</div>
+              ))}
+
+              {recipientEmails.length > 3 && (
+                <button
+                  onClick={() => setShowEmailPopup(true)}
+                  style={{
+                    marginTop: "6px",
+                    color: "#d86b7a",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  Xem tất cả ({recipientEmails.length})
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Mẫu email */}
           <label>Mẫu email</label>
           <select
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
-            style={{ width: "100%", padding: "12px", marginBottom: "20px" }}
+            style={{
+              width: "100%",
+              padding: "12px",
+              marginBottom: "20px",
+              border: "1px solid #f1e4da",
+              borderRadius: "8px",
+            }}
           >
             <option value="promo">🎁 Khuyến mãi</option>
             <option value="holiday">🎉 Ngày lễ</option>
@@ -129,7 +234,14 @@ const SendEmailPage = () => {
               rows="6"
               value={htmlContent}
               onChange={(e) => setHtmlContent(e.target.value)}
-              style={{ width: "100%", padding: "12px", marginBottom: "20px" }}
+              placeholder="Nhập nội dung HTML…"
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginBottom: "20px",
+                borderRadius: "8px",
+                border: "1px solid #f1e4da",
+              }}
             />
           )}
 
@@ -144,20 +256,25 @@ const SendEmailPage = () => {
               fontWeight: "bold",
               cursor: "pointer",
               fontSize: "16px",
+              transition: "0.3s",
             }}
           >
             ✉ Gửi Email
           </button>
 
-          {/* THÔNG BÁO */}
           {resultMsg && (
             <div
               style={{
                 marginTop: "20px",
                 padding: "15px",
                 borderRadius: "8px",
-                background: resultMsg.type === "success" ? "#e8fff0" : "#ffe8e8",
+                background:
+                  resultMsg.type === "success" ? "#e8fff0" : "#ffe8e8",
                 color: resultMsg.type === "success" ? "#008f3c" : "#d10000",
+                border:
+                  resultMsg.type === "success"
+                    ? "1px solid #b2ffcf"
+                    : "1px solid #ffb3b3",
               }}
             >
               {resultMsg.text}
@@ -165,16 +282,18 @@ const SendEmailPage = () => {
           )}
         </div>
 
-        {/* PREVIEW PHẢI */}
+        {/* ======================================================
+            XEM TRƯỚC
+        ====================================================== */}
         <div
           style={{
             background: "#faf7f7",
             padding: "25px",
             borderRadius: "12px",
-            border: "1px solid #eee",
+            border: "1px solid #f1e4da",
           }}
         >
-          <h2>🔍 Preview</h2>
+          <h2 style={{ color: "#8b5e3c" }}>🔍 Xem trước nội dung</h2>
 
           <div
             style={{
@@ -188,6 +307,70 @@ const SendEmailPage = () => {
           />
         </div>
       </div>
+
+      {/* ======================================================
+          POPUP DANH SÁCH EMAIL
+      ====================================================== */}
+      {showEmailPopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.3)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              width: "420px",
+              background: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              boxShadow: "0 5px 20px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h3 style={{ color: "#d86b7a", marginBottom: "10px" }}>
+              📬 Danh sách email ({recipientEmails.length})
+            </h3>
+
+            <div
+              style={{
+                maxHeight: "320px",
+                overflowY: "auto",
+                paddingRight: "10px",
+                border: "1px solid #f1e4da",
+                borderRadius: "8px",
+                padding: "10px",
+              }}
+            >
+              {recipientEmails.map((mail, idx) => (
+                <div key={idx} style={{ marginBottom: "5px" }}>
+                  • {mail}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowEmailPopup(false)}
+              style={{
+                marginTop: "15px",
+                width: "100%",
+                padding: "12px",
+                background: "#e06c7f",
+                color: "white",
+                borderRadius: "8px",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
