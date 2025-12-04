@@ -81,10 +81,10 @@ const Footer = () => {
             
             <h4 className="text-base font-bold mb-3 text-[#e06c7f]">Kết nối với chúng tôi</h4>
             <div className="social-icons flex gap-3">
-              <a href="https://facebook.com/kyuuk" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#e06c7f] text-white flex items-center justify-center hover:bg-[#c85d70] transition-colors" aria-label="Facebook">
+              <a href="https://www.facebook.com/NghCamTien" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#e06c7f] text-white flex items-center justify-center hover:bg-[#c85d70] transition-colors" aria-label="Facebook">
                 <i className="fab fa-facebook-f"></i>
               </a>
-              <a href="https://zalo.me/0909817137" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#f2b5bb] text-white flex items-center justify-center hover:bg-[#e06c7f] transition-colors" aria-label="Zalo">
+              <a href="https://zalo.me/0932160945" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#f2b5bb] text-white flex items-center justify-center hover:bg-[#e06c7f] transition-colors" aria-label="Zalo">
                 <span className="font-bold text-sm">Z</span>
               </a>
               <a href="mailto:cphoang07@gmail.com" className="w-10 h-10 rounded-full bg-[#f8a9b0] text-white flex items-center justify-center hover:bg-[#e06c7f] transition-colors" aria-label="Email">

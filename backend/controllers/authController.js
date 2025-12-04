@@ -2,12 +2,12 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { sendWelcomeEmail } = require("../services/emailService");
 
-// =============================
+
 // 🔐 TOKEN GENERATORS
-// =============================
+
 const generateAccessToken = (user) =>
   jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "3h",
   });
 
 const generateRefreshToken = (user) =>
@@ -15,9 +15,9 @@ const generateRefreshToken = (user) =>
     expiresIn: "30d",
   });
 
-// =============================
+
 // INTERNAL UTIL
-// =============================
+
 const createTokens = async (user) => {
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
@@ -31,9 +31,9 @@ const createTokens = async (user) => {
 
 const autoCreatePassword = () => Math.random().toString(36).slice(-10);
 
-// =============================
+
 // 🟢 GOOGLE LOGIN
-// =============================
+
 exports.googleLogin = async (req, res) => {
   try {
     const { email, name, googleId, picture } = req.body;
@@ -75,9 +75,9 @@ exports.googleLogin = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🟦 FACEBOOK LOGIN
-// =============================
+
 exports.facebookLogin = async (req, res) => {
   try {
     const { email, name, facebookId, picture } = req.body;
@@ -119,9 +119,9 @@ exports.facebookLogin = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🟢 REGISTER
-// =============================
+
 exports.register = async (req, res) => {
   try {
     const { name, email, password, phone, address, subscribeNewsletter = true } =
@@ -167,9 +167,9 @@ exports.register = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🟢 LOGIN
-// =============================
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -209,9 +209,9 @@ exports.login = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🔄 REFRESH TOKEN
-// =============================
+
 exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -246,9 +246,9 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-// =============================
+
 // 👤 PROFILE
-// =============================
+
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -264,9 +264,9 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
-// =============================
+
 // ✏ UPDATE PROFILE
-// =============================
+
 exports.updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);

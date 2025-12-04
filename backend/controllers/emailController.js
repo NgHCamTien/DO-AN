@@ -17,9 +17,9 @@ exports.sendMarketingEmail = async (req, res) => {
 
     let emailList = [];
 
-    // =====================================
+    
     // 1️⃣ USERS (user, admin, vip, all)
-    // =====================================
+    
     if (group === "all" || group === "user" || group === "admin" || group === "vip") {
       let filter = {};
 
@@ -30,9 +30,9 @@ exports.sendMarketingEmail = async (req, res) => {
       emailList.push(...users.map((u) => ({ email: u.email, name: u.name })));
     }
 
-    // =====================================
+    
     // 2️⃣ NEWSLETTER (người đăng ký)
-    // =====================================
+    
     if (group === "all" || group === "newsletter") {
       const subs = await Newsletter.find({}).select("email");
       emailList.push(
@@ -43,9 +43,9 @@ exports.sendMarketingEmail = async (req, res) => {
       );
     }
 
-    // =====================================
+    
     // 3️⃣ VIP (tự động tổng chi ≥ 3.000.000)
-    // =====================================
+    
     if (group === "vip") {
       const orders = await Order.aggregate([
         {
@@ -67,9 +67,9 @@ exports.sendMarketingEmail = async (req, res) => {
       }));
     }
 
-    // =====================================
+    
     // 4️⃣ LOẠI TRÙNG EMAIL
-    // =====================================
+    
     const unique = new Map();
     emailList.forEach((i) => i.email && unique.set(i.email, i));
     const finalRecipients = Array.from(unique.values());
@@ -81,9 +81,9 @@ exports.sendMarketingEmail = async (req, res) => {
       });
     }
 
-    // =====================================
+    
     // 5️⃣ GỬI EMAIL
-    // =====================================
+    
     let success = 0;
     let failed = 0;
 
@@ -101,9 +101,9 @@ exports.sendMarketingEmail = async (req, res) => {
       }
     }
 
-    // =====================================
+    
     // 6️⃣ LƯU LOG
-    // =====================================
+    
     await EmailLog.create({
       subject,
       templateName,

@@ -15,29 +15,29 @@ const { protect, admin } = require("../middleware/authMiddleware");
 // Multer upload middleware (đã tách riêng)
 const upload = require("../middleware/uploadMiddleware");
 
-// =========================
+
 // 📌 CREATE ORDER
-// =========================
+
 router.post("/", protect, createOrder);
 
-// =========================
+
 // 📌 USER GET ORDERS
-// =========================
+
 router.get("/myorders", protect, getMyOrders);
 
-// =========================
+
 // 📌 ADMIN GET ALL ORDERS
-// =========================
+
 router.get("/", protect, admin, getOrders);
 
-// =========================
+
 // 📌 GET ORDER DETAILS
-// =========================
+
 router.get("/:id", protect, getOrderById);
 
-// =========================
+
 // 📌 UPLOAD PAYMENT PROOF (BANK / E-WALLET)
-// =========================
+
 router.post(
   "/upload-payment/:id",
   protect,
@@ -84,14 +84,14 @@ router.post(
   }
 );
 
-// =========================
+
 // 📌 ADMIN CONFIRM BANK PAYMENT
-// =========================
+
 router.put("/:id/confirm-payment", protect, admin, confirmBankTransfer);
 
-// =========================
+
 // 📌 ADMIN UPDATE STATUS
-// =========================
+
 router.put("/:id/status", protect, admin, updateOrderStatus);
 
 module.exports = router;

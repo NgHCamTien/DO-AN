@@ -23,6 +23,7 @@ const EditProduct = () => {
     description: "",
     flowerTypes: [],
     season: "Quanh năm",
+    occasion: "other",
     categoryId: "",
     price: "",
     discountPrice: "",
@@ -43,17 +44,27 @@ const EditProduct = () => {
     formData.price && formData.discountPrice
       ? Math.min(
           Math.round(
-            ((formData.price - formData.discountPrice) / formData.price) * 100
+            ((Number(formData.price) - Number(formData.discountPrice)) /
+              Number(formData.price)) *
+              100
           ),
           99
         )
       : 0;
 
-  // 🟢 Load sản phẩm cũ
+  const getToken = () => {
+    try {
+      return user?.token || JSON.parse(localStorage.getItem("userInfo"))?.token;
+    } catch {
+      return null;
+    }
+  };
+
+  // 🟢 Load sản phẩm
   const fetchProduct = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/products/${id}`);
-      const p = res.data.data || res.data.product || res.data;
+      const p = res.data.product || res.data.data || res.data;
 
       setFormData({
         sku: p.sku || "",
@@ -62,7 +73,8 @@ const EditProduct = () => {
         description: p.description || "",
         flowerTypes: p.flowerTypes || [],
         season: p.season || "Quanh năm",
-        categoryId: p.category?._id || "",
+        occasion: p.occasion || "other",
+        categoryId: p.category?._id || p.categoryId || "",
         price: p.price || "",
         discountPrice: p.discountPrice || "",
         discountStartDate: p.discountStartDate
@@ -79,7 +91,7 @@ const EditProduct = () => {
 
       setCurrentImages(p.images || []);
     } catch (err) {
-      console.error(err);
+      console.error("Load product error:", err);
       setError("Không thể tải dữ liệu sản phẩm.");
     } finally {
       setFetching(false);
@@ -88,6 +100,7 @@ const EditProduct = () => {
 
   useEffect(() => {
     fetchProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // 🟢 Load danh mục
@@ -106,7 +119,7 @@ const EditProduct = () => {
     fetchCats();
   }, []);
 
-  // 🟢 Tạo preview ảnh
+  // 🟢 Preview ảnh mới
   useEffect(() => {
     if (!files.length) return setPreviews([]);
     const urls = files.map((file) => URL.createObjectURL(file));
@@ -114,7 +127,7 @@ const EditProduct = () => {
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [files]);
 
-  // 🟢 Xử lý tag
+  // 🟢 Đồng bộ tags theo tagsInput
   useEffect(() => {
     const arr = formData.tagsInput
       .split(",")
@@ -132,14 +145,7 @@ const EditProduct = () => {
     setFiles(selected);
   };
 
-  const getToken = () => {
-    try {
-      return user?.token || JSON.parse(localStorage.getItem("userInfo"))?.token;
-    } catch {
-      return null;
-    }
-  };
-  // 🟢 Hàm xử lý input (chung cho tất cả các ô)
+  // Hàm xử lý input chung
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -148,7 +154,7 @@ const EditProduct = () => {
     }));
   };
 
-  // 🟢 Cập nhật
+  // 🟢 Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -159,8 +165,20 @@ const EditProduct = () => {
       return;
     }
 
-    if (Number(formData.discountPrice) >= Number(formData.price)) {
+    if (
+      formData.discountPrice &&
+      Number(formData.discountPrice) >= Number(formData.price)
+    ) {
       setError("Giá khuyến mãi phải nhỏ hơn giá gốc");
+      return;
+    }
+
+    if (
+      formData.discountStartDate &&
+      formData.discountEndDate &&
+      formData.discountEndDate < formData.discountStartDate
+    ) {
+      setError("Ngày kết thúc khuyến mãi phải sau ngày bắt đầu");
       return;
     }
 
@@ -173,28 +191,44 @@ const EditProduct = () => {
 
     try {
       setLoading(true);
-      let imageUrls = currentImages;
 
+      // 1. Upload ảnh mới (nếu có)
+      let imageUrls = currentImages;
       if (files.length > 0) {
         const imgForm = new FormData();
         files.forEach((f) => imgForm.append("images", f));
-        const uploadRes = await axios.post(`${API_URL}/api/upload`, imgForm, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        imageUrls = uploadRes.data.urls || [];
+        const uploadRes = await axios.post(
+          `${API_URL}/api/upload`,
+          imgForm,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        imageUrls = uploadRes.data.urls || uploadRes.data.paths || [];
       }
 
+      // 2. Gửi dữ liệu cập nhật
       const payload = {
-        ...formData,
+        sku: formData.sku,
+        name: formData.name,
+        shortDescription: formData.shortDescription,
+        description: formData.description,
         price: Number(formData.price),
         discountPrice: formData.discountPrice
           ? Number(formData.discountPrice)
           : undefined,
+        discountStartDate: formData.discountStartDate || undefined,
+        discountEndDate: formData.discountEndDate || undefined,
+        categoryId: formData.categoryId,
+        flowerTypes: formData.flowerTypes,
+        season: formData.season,
         stock: Number(formData.stock),
+        isFeatured: formData.isFeatured,
         tags: formData.tags,
+        occasion: formData.occasion,
         images: imageUrls,
       };
 
@@ -203,21 +237,24 @@ const EditProduct = () => {
       });
 
       alert("🌸 Cập nhật sản phẩm thành công!");
-      await fetchProduct();
+      navigate("/admin/products");
     } catch (err) {
-      console.error(err);
-      setError(err?.response?.data?.message || "Lỗi khi cập nhật sản phẩm.");
+      console.error("Update product error:", err);
+      setError(
+        err?.response?.data?.message || "Lỗi khi cập nhật sản phẩm."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetching)
+  if (fetching) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-10 h-10 border-4 border-pink-400 border-t-transparent rounded-full"></div>
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-blue-50 py-10 px-4">
@@ -234,7 +271,7 @@ const EditProduct = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Mã & tên */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block font-medium text-gray-700 mb-1">
                 Mã sản phẩm *
@@ -242,9 +279,7 @@ const EditProduct = () => {
               <input
                 name="sku"
                 value={formData.sku}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, sku: e.target.value }))
-                }
+                onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
               />
             </div>
@@ -255,12 +290,24 @@ const EditProduct = () => {
               <input
                 name="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, name: e.target.value }))
-                }
+                onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
               />
             </div>
+          </div>
+
+          {/* Mô tả ngắn */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">
+              Mô tả ngắn
+            </label>
+            <textarea
+              name="shortDescription"
+              value={formData.shortDescription}
+              onChange={handleChange}
+              rows="3"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+            />
           </div>
 
           {/* Loại hoa */}
@@ -315,8 +362,27 @@ const EditProduct = () => {
             </div>
           </div>
 
-          {/* Giá khuyến mãi & ngày */}
-          <div className="grid grid-cols-2 gap-6">
+          {/* Danh mục + Giá */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Danh mục *
+              </label>
+              <select
+                name="categoryId"
+                value={formData.categoryId}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-400 focus:ring focus:ring-blue-100 outline-none transition"
+              >
+                <option value="">-- Chọn danh mục --</option>
+                {categories.map((c) => (
+                  <option key={c._id || c.id} value={c._id || c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block font-medium text-gray-700 mb-1">
                 Giá gốc *
@@ -329,6 +395,64 @@ const EditProduct = () => {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-400 focus:ring focus:ring-green-100 outline-none transition"
               />
             </div>
+          </div>
+
+          {/* Tồn kho */}
+          <div>
+            <label className="block font-medium text-gray-700 mb-1">
+              Tồn kho *
+            </label>
+            <input
+              type="number"
+              name="stock"
+              value={formData.stock}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-purple-400 focus:ring focus:ring-purple-100 outline-none transition"
+            />
+          </div>
+
+          {/* Mùa hoa + Dịp tặng */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Mùa hoa
+              </label>
+              <select
+                name="season"
+                value={formData.season}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              >
+                <option value="Quanh năm">Quanh năm</option>
+                <option value="Xuân">Xuân</option>
+                <option value="Hạ">Hạ</option>
+                <option value="Thu">Thu</option>
+                <option value="Đông">Đông</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Dịp tặng
+              </label>
+              <select
+                name="occasion"
+                value={formData.occasion}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              >
+                <option value="birthday">Sinh nhật</option>
+                <option value="graduation">Tốt nghiệp</option>
+                <option value="opening">Khai trương</option>
+                <option value="anniversary">Kỷ niệm</option>
+                <option value="love">Tình yêu</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Giá khuyến mãi & ngày */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block font-medium text-gray-700 mb-1">
                 Giá khuyến mãi
@@ -348,43 +472,47 @@ const EditProduct = () => {
                 </p>
               )}
             </div>
-          </div>
-
-          {/* Thời gian KM */}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-gray-700 mb-1">Bắt đầu KM</label>
-              <input
-                type="date"
-                value={formData.discountStartDate}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    discountStartDate: e.target.value,
-                  }))
-                }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 mb-1">Kết thúc KM</label>
-              <input
-                type="date"
-                value={formData.discountEndDate}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    discountEndDate: e.target.value,
-                  }))
-                }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 mb-1">
+                  Bắt đầu KM
+                </label>
+                <input
+                  type="date"
+                  value={formData.discountStartDate}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      discountStartDate: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">
+                  Kết thúc KM
+                </label>
+                <input
+                  type="date"
+                  value={formData.discountEndDate}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      discountEndDate: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+                />
+              </div>
             </div>
           </div>
 
           {/* Mô tả */}
           <div>
-            <label className="block font-medium text-gray-700 mb-1">Mô tả *</label>
+            <label className="block font-medium text-gray-700 mb-1">
+              Mô tả *
+            </label>
             <textarea
               name="description"
               value={formData.description}
@@ -406,8 +534,9 @@ const EditProduct = () => {
               onChange={handleFilesChange}
               className="block w-full border border-gray-200 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
             />
+            {/* Ảnh hiện tại */}
             {currentImages.length > 0 && files.length === 0 && (
-              <div className="mt-3 grid grid-cols-5 gap-3">
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {currentImages.map((img, i) => (
                   <img
                     key={i}
@@ -418,8 +547,9 @@ const EditProduct = () => {
                 ))}
               </div>
             )}
+            {/* Preview ảnh mới */}
             {previews.length > 0 && (
-              <div className="mt-3 grid grid-cols-5 gap-3">
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {previews.map((p, i) => (
                   <img
                     key={i}
@@ -432,15 +562,46 @@ const EditProduct = () => {
             )}
           </div>
 
-          {/* Nổi bật + tags */}
+          {/* Tags + nổi bật */}
           <div className="flex flex-col gap-3">
-            <input
-              name="tagsInput"
-              value={formData.tagsInput}
-              onChange={handleChange}
-              placeholder="hoa hồng, sinh nhật, dễ thương..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
-            />
+            <div>
+              <label className="block font-medium text-gray-700 mb-1">
+                Tags
+              </label>
+              <input
+                name="tagsInput"
+                value={formData.tagsInput}
+                onChange={handleChange}
+                placeholder="hoa hồng, sinh nhật, dễ thương..."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-pink-400 focus:ring focus:ring-pink-100 outline-none transition"
+              />
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="flex items-center gap-1 bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-sm shadow"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          tags: prev.tags.filter((_, idx) => idx !== i),
+                          tagsInput: prev.tags
+                            .filter((_, idx) => idx !== i)
+                            .join(", "),
+                        }))
+                      }
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
             <div className="flex items-center gap-3">
               <input
                 id="featured"

@@ -1,8 +1,7 @@
 const nodemailer = require("nodemailer");
 
-// =====================================
+
 // 1. TỰ ĐỘNG CHỌN TRANSPORT
-// =====================================
 const getTransporter = async () => {
   // --- Ưu tiên: Gmail App Password ---
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
@@ -72,18 +71,18 @@ const getTransporter = async () => {
   };
 };
 
-// =====================================
+
 // 2. TEMPLATE EMAIL CHÀO MỪNG
-// =====================================
+
 const getWelcomeEmailHTML = (userName) => `
   <h2>🌸 Xin chào ${userName}!</h2>
   <p>Cảm ơn bạn đã đăng ký tại <b>DDT Flower Shop</b>.</p>
   <p>Chúc bạn một ngày thật tuyệt vời!</p>
 `;
 
-// =====================================
+
 // 3. GỬI EMAIL CHÀO MỪNG
-// =====================================
+
 const sendWelcomeEmail = async (userEmail, userName) => {
   try {
     const { transporter, method } = await getTransporter();
@@ -103,9 +102,9 @@ const sendWelcomeEmail = async (userEmail, userName) => {
   }
 };
 
-// =====================================
+
 // 4. GỬI EMAIL MARKETING / TÙY CHỈNH
-// =====================================
+
 const sendCustomEmail = async (email, subject, htmlContent) => {
   try {
     const { transporter } = await getTransporter();

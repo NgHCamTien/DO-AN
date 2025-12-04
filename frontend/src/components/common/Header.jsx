@@ -1,8 +1,11 @@
+// src/components/common/Header.jsx
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { CartContext } from "../../context/CartContext";
-import { categoryAPI } from "../../api";
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const Header = () => {
   const { user, logout } = useContext(AuthContext);
@@ -10,55 +13,95 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const headerRef = useRef(null); // ⭐ create ref
+  const headerRef = useRef(null);
+  const searchWrapperRef = useRef(null);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [categories, setCategories] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const cartCount = cartItems.reduce(
     (total, item) => total + item.quantity,
     0
   );
 
+  // Đồng bộ ô search với URL (?q=...)
   useEffect(() => {
-    fetchCategories();
-
     const params = new URLSearchParams(location.search);
     setSearchTerm(params.get("q") || "");
-    setSelectedCategory(params.get("category") || "all");
   }, [location.search]);
 
-  const fetchCategories = async () => {
-    try {
-      const res = await categoryAPI.getCategories();
-      if (Array.isArray(res.data)) setCategories(res.data);
-    } catch (err) {
-      console.error(err);
+  // Click ngoài để đóng dropdown gợi ý
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        searchWrapperRef.current &&
+        !searchWrapperRef.current.contains(e.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Gọi API suggest khi gõ (debounce nhẹ)
+  useEffect(() => {
+    if (!searchTerm || searchTerm.trim().length < 2) {
+      setSuggestions([]);
+      return;
     }
-  };
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await axios.get(
+          `${API_URL}/api/products/suggest?q=${encodeURIComponent(
+            searchTerm.trim()
+          )}`,
+          { signal: controller.signal }
+        );
+        setSuggestions(res.data.results || []);
+        setShowSuggestions(true);
+      } catch (err) {
+        if (err.name !== "CanceledError" && err.name !== "AbortError") {
+          console.error("Suggest error:", err);
+        }
+      }
+    }, 250); // 0.25s
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [searchTerm]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    const q = searchTerm.trim();
     const params = new URLSearchParams();
+    if (q) params.set("q", q);
 
-    if (searchTerm.trim()) params.set("q", searchTerm.trim());
-    if (selectedCategory !== "all") params.set("category", selectedCategory);
-
+    setShowSuggestions(false);
     navigate(`/product${params.toString() ? `?${params}` : ""}`);
+  };
+
+  const handleSuggestionClick = (id) => {
+    setShowSuggestions(false);
+    setSearchTerm("");
+    navigate(`/product-detail/${id}`);
   };
 
   return (
     <>
       <div
-  ref={headerRef}
-  id="header-wrapper"
-  className="fixed top-0 left-0 w-full z-50"
-  style={{
-    "--header-height": `${headerRef.current?.offsetHeight || 110}px`,
-  }}
->
-
+        ref={headerRef}
+        id="header-wrapper"
+        className="fixed top-0 left-0 w-full z-50"
+        style={{
+          "--header-height": `${headerRef.current?.offsetHeight || 110}px`,
+        }}
+      >
         {/* TOP BAR */}
         <div className="bg-gray-800 text-white text-sm flex justify-between px-6 py-2">
           <p>🌸 DDT Flower Shop - Nơi gửi gắm yêu thương 🌸</p>
@@ -66,10 +109,15 @@ const Header = () => {
           <div className="flex gap-4">
             {user ? (
               <>
-                <Link to="/profile" className="hover:text-pink-300">{user.name}</Link>
+                <Link to="/profile" className="hover:text-pink-300">
+                  {user.name}
+                </Link>
 
                 {user.role === "admin" && (
-                  <Link to="/admin/dashboard" className="hover:text-pink-300">
+                  <Link
+                    to="/admin/dashboard"
+                    className="hover:text-pink-300"
+                  >
                     Quản trị
                   </Link>
                 )}
@@ -79,15 +127,17 @@ const Header = () => {
                 </button>
               </>
             ) : (
-              <Link to="/login" className="hover:text-pink-300">Đăng nhập</Link>
+              <Link to="/login" className="hover:text-pink-300">
+                Đăng nhập
+              </Link>
             )}
           </div>
         </div>
 
         {/* MAIN HEADER */}
         <div className="bg-[#fffaf8] shadow-md border-b border-[#f0e2da] px-8 py-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
+            {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
               <img
                 src="/DDT.png"
@@ -99,42 +149,71 @@ const Header = () => {
               </span>
             </Link>
 
-            <form
-              onSubmit={handleSearchSubmit}
-              className="flex items-center border border-[#f0e2da] rounded-full overflow-hidden w-1/2 bg-white"
-            >
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-10 bg-[#fff1f3] text-[#4b2c2b] px-3 text-sm focus:outline-none w-24"
+            {/* Search + Suggest */}
+            <div className="relative flex-1 max-w-xl" ref={searchWrapperRef}>
+              <form
+                onSubmit={handleSearchSubmit}
+                className="flex items-center border border-[#f0e2da] rounded-full overflow-hidden bg-white"
               >
-                <option value="all">Tất cả</option>
-                {categories.map((c) => (
-                  <option key={c._id} value={c.slug}>{c.name}</option>
-                ))}
-              </select>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Tìm kiếm theo tên hoa, loại hoa, tag, dịp tặng..."
+                  className="flex-1 px-4 py-2 focus:outline-none text-[#4b2c2b] text-sm"
+                />
 
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm kiếm hoa..."
-                className="flex-1 px-3 py-2 focus:outline-none text-[#4b2c2b]"
-              />
+                <button
+                  type="submit"
+                  className="bg-[#d15574] text-white px-4 py-2 hover:bg-[#b74662] transition"
+                >
+                  <i className="fas fa-search" />
+                </button>
+              </form>
 
-              <button
-                type="submit"
-                className="bg-[#d15574] text-white px-4 py-2 hover:bg-[#b74662] transition"
-              >
-                <i className="fas fa-search"></i>
-              </button>
-            </form>
+              {/* Dropdown gợi ý */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-2 bg-white border border-pink-100 rounded-xl shadow-lg max-h-72 overflow-y-auto text-sm z-50">
+                  {suggestions.map((item) => (
+                    <button
+                      key={item._id}
+                      type="button"
+                      onClick={() => handleSuggestionClick(item._id)}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-pink-50 text-left"
+                    >
+                      {item.thumbnail && (
+                        <img
+                          src={`${API_URL}${item.thumbnail}`}
+                          alt={item.name}
+                          className="w-10 h-10 rounded-md object-cover border border-pink-100"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium text-[#4b2c2b] line-clamp-1">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {item.discountPrice
+                            ? `${item.discountPrice.toLocaleString(
+                                "vi-VN"
+                              )}đ (giảm từ ${item.price.toLocaleString(
+                                "vi-VN"
+                              )}đ)`
+                            : `${item.price.toLocaleString("vi-VN")}đ`}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
+            {/* Cart */}
             <Link
               to="/cart"
               className="relative bg-[#d15574] text-white px-5 py-2 rounded-full flex items-center gap-2 hover:bg-[#b74662] transition shadow-sm"
             >
-              <i className="fas fa-shopping-cart"></i>
+              <i className="fas fa-shopping-cart" />
               <span>Giỏ hàng</span>
 
               {cartCount > 0 && (
@@ -147,14 +226,15 @@ const Header = () => {
         </div>
       </div>
 
-      {/* SPACER AUTO — dùng JS set đúng chiều cao header */}
+      {/* Spacer để đẩy nội dung xuống dưới header fixed */}
       <div
         style={{
           height: `${headerRef.current?.offsetHeight || 110}px`,
         }}
-      ></div>
+      />
     </>
   );
 };
 
 export default Header;
+

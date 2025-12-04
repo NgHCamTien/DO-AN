@@ -131,7 +131,7 @@ const AdminProducts = () => {
                         : product.name}
                     </span>
                   </td>
-                  <td className="px-6 py-4">{product.category?.name || "—"}</td>
+                  <td className="px-6 py-4">{product.Category?.name || "—"}</td>
                   <td className="px-6 py-4">
                     {product.discountPrice ? (
                       <>

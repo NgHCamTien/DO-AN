@@ -2,9 +2,9 @@ const Order = require("../models/Order");
 const User = require("../models/User");
 const Product = require("../models/Product");
 
-// =============================
+
 // ⭐ XÁC ĐỊNH SỐ LƯỢNG TỐI ĐA
-// =============================
+
 const getMaxQtyForProduct = (product) => {
   if (product.price > 1000000) return 1;
 
@@ -19,9 +19,9 @@ const getMaxQtyForProduct = (product) => {
   return 3;
 };
 
-// =============================
+
 // 🟢 CREATE ORDER
-// =============================
+
 const createOrder = async (req, res) => {
   try {
     const { orderItems, shippingAddress, paymentMethod, totalPrice, notes } =
@@ -108,9 +108,9 @@ const createOrder = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🔵 GET MY ORDERS
-// =============================
+
 const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id })
@@ -128,9 +128,9 @@ const getMyOrders = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🔵 ADMIN GET ALL ORDERS
-// =============================
+
 const getOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
@@ -148,9 +148,9 @@ const getOrders = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🔵 GET ORDER BY ID
-// =============================
+
 const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate(
@@ -180,9 +180,9 @@ const getOrderById = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🟡 ADMIN CONFIRM PAYMENT
-// =============================
+
 const confirmBankTransfer = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -206,9 +206,9 @@ const confirmBankTransfer = async (req, res) => {
   }
 };
 
-// =============================
+
 // 🟡 UPDATE STATUS
-// =============================
+
 const updateOrderStatus = async (req, res) => {
   try {
     const valid = [
@@ -245,9 +245,9 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-// =============================
+
 // ⭐ EXPORT — QUAN TRỌNG!
-// =============================
+
 module.exports = {
   createOrder,
   getMyOrders,
