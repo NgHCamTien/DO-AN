@@ -1,0 +1,17 @@
+# Node
+node_modules/
+
+# Uploads
+uploads/
+
+# Env
+.env
+
+# Logs & cache
+*.log
+.cache/
+.eslintcache
+
+# Build
+dist/
+build/

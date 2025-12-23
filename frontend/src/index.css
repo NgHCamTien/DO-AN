@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset cơ bản */
+body {
+  margin: 0;
+  @apply font-sans text-gray-900;
+  background-color: var(--secondary); /* dùng nền hồng nhạt #faf8f6 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* Code blocks */
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* 🎨 Bảng màu DDT Flower */
+root {
+  --bg-main: #f9f5f1;      /* nền tổng thể */
+  --sidebar-bg: #f8dfe2;   /* sidebar nhẹ hơn */
+  --primary: #e06c7f;      /* hồng đất chủ đạo */
+  --accent: #8b5e3c;       /* nâu gỗ */
+  --text-main: #3e2f2f;    /* chữ chính */
+  --card-bg: #fff8fb;      /* nền thẻ sáng hơn */
+}
+
+/* Biến màu để Tailwind hiểu và áp dụng dễ hơn */
+.bg-primary { background-color: var(--primary); }
+.bg-secondary {
+  background-color: var(--secondary) !important;
+}
+
+.bg-accent { background-color: var(--accent); }
+
+.text-primary { color: var(--primary); }
+.text-accent { color: var(--accent); }
+.text-light { color: var(--light); }
+.text-dark { color: var(--dark); }
+
+.hover\:bg-primary:hover { background-color: var(--primary); }
+.hover\:text-primary:hover { color: var(--primary); }
+
+.border-primary { border-color: var(--primary); }
+.border-accent { border-color: var(--accent); }
+
+.shadow-soft { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); }
+
+/* Nút kiểu DDT Flower */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--light);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent);
+}
+header, .navbar, .footer {
+  background-color: var(--secondary) !important;
+}
+
+.sidebar {
+  background: linear-gradient(to bottom, #fff6f8, #f9f5f1);
+}
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.sidebar {
+  background: var(--sidebar-bg);
+  border-right: 1px solid rgba(139, 94, 60, 0.1);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent);
+}
+button:focus {
+  outline: none;
+}
