@@ -1,26 +1,46 @@
-// Ở đầu file:
-import AdminPaymentRequests from "../pages/admin/AdminPaymentRequests.jsx";         
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import ProtectedAdminRoute from './ProtectedAdminRoute';
+
+import ProtectedAdminRoute from "./ProtectedAdminRoute";
 import AdminLayout from "../layouts/AdminLayout";
 
-import AdminLogin from "../pages/admin/Login";
+// Auth
+import AdminLogin from "../pages/Login";
+
+// Dashboard
 import AdminDashboard from "../pages/admin/Dashboard";
+
+// Products
 import AdminProducts from "../pages/admin/Products";
 import AddProduct from "../pages/admin/AddProduct";
 import EditProduct from "../pages/admin/EditProduct";
+
+// Orders
 import AdminOrders from "../pages/admin/AdminOrders";
+
+// Categories
 import AdminCategories from "../pages/admin/Categories";
+
+// Users
 import AdminUsers from "../pages/admin/AdminUsers";
+
+// Notifications
 import AdminNotifications from "../pages/admin/AdminNotifications";
+
+// Reviews
 import AdminReviews from "../pages/admin/AdminReviews";
+
+// ⭐ Payment Proof Verification (QUAN TRỌNG – đã sửa)
+import AdminPaymentRequests from "../pages/admin/AdminPaymentRequests";
 
 // Email system
 import EmailDashboard from "../pages/admin/EmailDashboard";
 import SendEmailPage from "../pages/admin/SendEmailPage";
 import EmailTemplates from "../pages/admin/EmailTemplates";
 import EmailHistory from "../pages/admin/EmailHistoryPage";
+
+// Chat Support
+import AdminChat from "../pages/admin/AdminChat";
 
 const AdminRoutes = () => {
   return (
@@ -60,14 +80,21 @@ const AdminRoutes = () => {
         {/* Reviews */}
         <Route path="reviews" element={<AdminReviews />} />
 
-        {/* ⭐ Payment Proof Verification (Trang duyệt ảnh) */}
-        <Route path="payment-requests" element={<AdminPaymentRequests />} />
+        {/* Payment requests */}
+        <Route
+          path="payment-requests"
+          element={<AdminPaymentRequests />}
+        />
 
         {/* Email system */}
         <Route path="email" element={<EmailDashboard />} />
         <Route path="email/send" element={<SendEmailPage />} />
         <Route path="email/templates" element={<EmailTemplates />} />
         <Route path="email/history" element={<EmailHistory />} />
+
+        {/* Chat */}
+        <Route path="chat" element={<AdminChat />} />
+
       </Route>
     </Routes>
   );

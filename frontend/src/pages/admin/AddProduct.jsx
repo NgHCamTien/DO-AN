@@ -124,7 +124,7 @@ const AddProduct = () => {
 
   const getToken = () => {
     try {
-      return user?.token || JSON.parse(localStorage.getItem("userInfo"))?.token;
+      return user?.token || JSON.parse(sessionStorage.getItem("userInfo"))?.token;
     } catch {
       return null;
     }
@@ -188,7 +188,6 @@ const AddProduct = () => {
       // 2. Gửi dữ liệu sản phẩm
       const productData = {
         name,
-        shortDescription,
         description,
         price: Number(price),
         discountPrice: discountPrice ? Number(discountPrice) : undefined,
@@ -205,15 +204,16 @@ const AddProduct = () => {
       };
 
 
-      const res = await axios.post(`${API_URL}/api/products`, productData, {
+          await axios.post(`${API_URL}/api/products`, productData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+
       // 👉 LẤY SKU TỪ BACKEND
-      setGeneratedSku(res.data.data.sku);
+      // setGeneratedSku(res.data.data.sku);
 
       alert("🌸 Thêm sản phẩm thành công!");
-
+      navigate("/admin/products");
     } catch (err) {
       console.error("Upload hoặc thêm sản phẩm lỗi:", err);
       setError(

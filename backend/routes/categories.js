@@ -41,16 +41,11 @@ const upload = multer({
   }
 });
 
-// Lấy tất cả danh mục
 router.get('/', getCategories);
 
-// Lấy danh mục theo slug
-router.get('/:slug', getCategoryBySlug);
+router.get('/slug/:slug/products', getProductsByCategory);
+router.get('/slug/:slug', getCategoryBySlug);
 
-// Lấy sản phẩm theo danh mục
-router.get('/:slug/products', getProductsByCategory);
-
-// Admin routes
 router.post('/', protect, admin, upload.single('image'), createCategory);
 router.put('/:id', protect, admin, upload.single('image'), updateCategory);
 router.delete('/:id', protect, admin, deleteCategory);

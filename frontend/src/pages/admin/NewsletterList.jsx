@@ -3,8 +3,8 @@ import axios from 'axios';
 const NewsletterList = ()=> {
   const [list, setList] = useState([]);
   useEffect(()=>{ fetch(); },[]);
-  const fetch = async ()=>{ const {data} = await axios.get('/api/newsletter', { headers: { Authorization:`Bearer ${localStorage.getItem('token')}` } }); setList(data.data || data); };
-  const del = async id => { if(!confirm('Xóa?')) return; await axios.delete(`/api/newsletter/${id}`, { headers: { Authorization:`Bearer ${localStorage.getItem('token')}` } }); fetch(); };
+  const fetch = async ()=>{ const {data} = await axios.get('/api/newsletter', { headers: { Authorization:`Bearer ${sessionStorage.getItem('token')}` } }); setList(data.data || data); };
+  const del = async id => { if(!confirm('Xóa?')) return; await axios.delete(`/api/newsletter/${id}`, { headers: { Authorization:`Bearer ${sessionStorage.getItem('token')}` } }); fetch(); };
   return (
     <div className="p-4">
       <h2 className="text-2xl mb-4">Danh sách đăng ký nhận tin</h2>

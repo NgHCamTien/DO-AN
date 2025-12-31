@@ -4,6 +4,7 @@ import ReactQuill from "react-quill";
 import { ToastContainer, toast } from "react-toastify";
 import "react-quill/dist/quill.snow.css";
 import "react-toastify/dist/ReactToastify.css";
+import { useLocation } from "react-router-dom";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -64,6 +65,9 @@ Trân trọng,<br/>
 `;
 
 const SendEmailPage = () => {
+  const location = useLocation();
+  const templateData = location.state;
+
   const [subject, setSubject] = useState("");
   const [group, setGroup] = useState("all");
   const [htmlContent, setHtmlContent] = useState("");
@@ -80,7 +84,7 @@ const SendEmailPage = () => {
   useEffect(() => {
     const fetchRecipients = async () => {
       try {
-        const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+        const userInfo = JSON.parse(sessionStorage.getItem("userInfo"));
         const res = await axios.get(
           `${API_URL}/api/email/recipients?group=${group}`,
           {
@@ -115,7 +119,7 @@ const SendEmailPage = () => {
     }
 
     try {
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      const userInfo = JSON.parse(sessionStorage.getItem("userInfo"));
 
        await axios.post(
         `${API_URL}/api/email/send`,
@@ -140,6 +144,15 @@ const SendEmailPage = () => {
       toast.error("❌ Không thể gửi email, vui lòng thử lại");
     }
   };
+useEffect(() => {
+  if (templateData?.subject) {
+    setSubject(templateData.subject);
+  }
+
+  if (templateData?.html) {
+    setHtmlContent(templateData.html);
+  }
+}, [templateData]);
 
   /* ===============================
             UI

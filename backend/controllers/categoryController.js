@@ -126,27 +126,33 @@ const updateCategory = async (req, res) => {
 // Xóa danh mục (Admin)
 const deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const { id } = req.params;
 
-    if (category) {
-      // Kiểm tra xem có sản phẩm nào thuộc danh mục này không
-      const productsCount = await Product.countDocuments({ category: category._id });
-
-      if (productsCount > 0) {
-        return res.status(400).json({
-          message: 'Không thể xóa danh mục này vì có sản phẩm liên quan'
-        });
-      }
-
-      await category.remove();
-      res.json({ message: 'Đã xóa danh mục' });
-    } else {
-      res.status(404).json({ message: 'Không tìm thấy danh mục' });
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ message: "Không tìm thấy danh mục" });
     }
+
+    const productsCount = await Product.countDocuments({ category: id });
+
+    if (productsCount > 0) {
+      return res.status(400).json({
+        message: `Danh mục đang có ${productsCount} sản phẩm`,
+      });
+    }
+
+    // ✅ CHO PHÉP XOÁ
+    await Category.deleteOne({ _id: id });
+
+    return res.json({
+      message: "Xoá danh mục thành công",
+    });
   } catch (error) {
+    console.error("DELETE CATEGORY ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 module.exports = {
   getCategories,

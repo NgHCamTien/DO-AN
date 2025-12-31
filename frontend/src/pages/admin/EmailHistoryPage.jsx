@@ -4,7 +4,7 @@ const EmailHistoryPage = () => {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+    const userInfo = JSON.parse(sessionStorage.getItem("userInfo"));
 
     fetch("http://localhost:5000/api/email/history", {
       headers: {

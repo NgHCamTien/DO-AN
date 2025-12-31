@@ -19,7 +19,6 @@ const EditProduct = () => {
   const [formData, setFormData] = useState({
     sku: "",
     name: "",
-    shortDescription: "",
     description: "",
     flowerTypes: [],
     season: "Quanh năm",
@@ -54,7 +53,7 @@ const EditProduct = () => {
 
   const getToken = () => {
     try {
-      return user?.token || JSON.parse(localStorage.getItem("userInfo"))?.token;
+      return user?.token || JSON.parse(sessionStorage.getItem("userInfo"))?.token;
     } catch {
       return null;
     }
@@ -69,7 +68,6 @@ const EditProduct = () => {
       setFormData({
         sku: p.sku || "",
         name: p.name || "",
-        shortDescription: p.shortDescription || "",
         description: p.description || "",
         flowerTypes: p.flowerTypes || [],
         season: p.season || "Quanh năm",
@@ -100,7 +98,7 @@ const EditProduct = () => {
 
   useEffect(() => {
     fetchProduct();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [id]);
 
   // 🟢 Load danh mục
@@ -214,7 +212,6 @@ const EditProduct = () => {
       // 2. Gửi dữ liệu cập nhật
       const payload = {
       name: formData.name,
-      shortDescription: formData.shortDescription,
       description: formData.description,
       price: Number(formData.price),
       discountPrice: formData.discountPrice

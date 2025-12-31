@@ -7,20 +7,20 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // =====================================================
-  // 🟢 LOAD USER TỪ LOCALSTORAGE (KHI MỞ / RELOAD TRANG)
+  // 🟢 LOAD USER TỪ SESSIONSTORAGE (THEO TỪNG TAB)
   // =====================================================
   useEffect(() => {
     try {
-      const userInfo = localStorage.getItem("userInfo");
+      const userInfo = sessionStorage.getItem("userInfo");
       if (userInfo) {
         setUser(JSON.parse(userInfo));
       }
     } catch (error) {
       console.error("❌ Error parsing userInfo:", error);
-      localStorage.removeItem("userInfo");
+      sessionStorage.removeItem("userInfo");
       setUser(null);
     } finally {
-      setLoading(false); // ⭐ QUAN TRỌNG
+      setLoading(false);
     }
   }, []);
 
@@ -47,10 +47,10 @@ const AuthProvider = ({ children }) => {
         email: data.user.email,
         role: data.user.role || "user",
         picture: data.user.picture || "",
-        token: data.accessToken, // ⭐ RẤT QUAN TRỌNG
+        token: data.accessToken,
       };
 
-      localStorage.setItem("userInfo", JSON.stringify(userToSave));
+      sessionStorage.setItem("userInfo", JSON.stringify(userToSave));
       setUser(userToSave);
 
       return { success: true, user: userToSave };
@@ -99,7 +99,7 @@ const AuthProvider = ({ children }) => {
         token: data.accessToken,
       };
 
-      localStorage.setItem("userInfo", JSON.stringify(userToSave));
+      sessionStorage.setItem("userInfo", JSON.stringify(userToSave));
       setUser(userToSave);
 
       return { success: true, user: userToSave };
@@ -133,7 +133,7 @@ const AuthProvider = ({ children }) => {
       }
 
       const updatedUser = { ...user, ...data.user };
-      localStorage.setItem("userInfo", JSON.stringify(updatedUser));
+      sessionStorage.setItem("userInfo", JSON.stringify(updatedUser));
       setUser(updatedUser);
 
       return { success: true };
@@ -143,10 +143,10 @@ const AuthProvider = ({ children }) => {
   };
 
   // =====================================================
-  // 🟢 LOGOUT
+  // 🟢 LOGOUT (CHỈ ẢNH HƯỞNG TAB HIỆN TẠI)
   // =====================================================
   const logout = () => {
-    localStorage.removeItem("userInfo");
+    sessionStorage.removeItem("userInfo");
     setUser(null);
     window.location.href = "/";
   };
@@ -155,12 +155,12 @@ const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        loading, // ⭐ Header sẽ dùng loading
+        loading,
         login,
         register,
         updateProfile,
         logout,
-        setUser, // ⭐ dùng cho Google Login
+        setUser,
       }}
     >
       {children}

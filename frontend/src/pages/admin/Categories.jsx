@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
-import { AuthContext } from "../../context/AuthContext";
+import React, { useState, useEffect } from "react";
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
@@ -8,7 +7,7 @@ const AdminCategories = () => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({ name: "", slug: "", description: "" });
-  const { logout } = useContext(AuthContext);
+ 
 
   useEffect(() => {
     fetchCategories();
@@ -46,7 +45,7 @@ const AdminCategories = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = JSON.parse(localStorage.getItem("userInfo"))?.token;
+    const token = JSON.parse(sessionStorage.getItem("userInfo"))?.token;
     if (!token) return alert("Phiên đăng nhập hết hạn.");
 
     const url = editing
@@ -80,7 +79,7 @@ const AdminCategories = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Xóa danh mục này?")) return;
     try {
-      const token = JSON.parse(localStorage.getItem("userInfo"))?.token;
+      const token = JSON.parse(sessionStorage.getItem("userInfo"))?.token;
       const res = await fetch(`http://localhost:5000/api/categories/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },

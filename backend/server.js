@@ -11,6 +11,11 @@ const { Server } = require("socket.io");
 const connectDB = require("./config/db");
 require("./services/emailService");
 
+// 🔥 CHAT MODELS + BOT
+const Conversation = require("./models/Conversation");
+const Message = require("./models/Message");
+const { getBotReply } = require("./services/botService");
+
 // ================== CONFIG ==================
 dotenv.config();
 connectDB();
@@ -22,7 +27,6 @@ const PORT = process.env.PORT || 5000;
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
-  console.log("📁 Created uploads folder");
 }
 
 // ================== MIDDLEWARE ==================
@@ -30,17 +34,14 @@ app.use(
   cors({
     origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
 app.use("/uploads", express.static(uploadDir));
 
-// ================== ROUTES ==================
+// ================== ROUTES (GIỮ NGUYÊN SERVER CŨ) ==================
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/products", require("./routes/products"));
 app.use("/api/categories", require("./routes/categories"));
@@ -58,108 +59,148 @@ app.use("/api/admin/users", require("./routes/adminUsers"));
 app.use("/api/admin/dashboard", require("./routes/adminDashboard"));
 app.use("/api/admin/coupons", require("./routes/adminCoupons"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+
 app.use("/api/payment-requests", require("./routes/paymentRequestRoutes"));
 app.use(
   "/api/admin/payment-requests",
   require("./routes/adminPaymentRoutes")
 );
+app.use("/api/chat", require("./routes/chatRoutes"));
 
 // ================== TEST API ==================
 app.get("/", (req, res) => {
   res.json({ message: "🌸 DDT Flower Shop API is running..." });
 });
 
-// ================== 404 HANDLER ==================
-app.use((req, res, next) => {
-  if (req.originalUrl.startsWith("/uploads/")) return next();
-  res.status(404).json({ success: false, message: "Route không tồn tại" });
-});
-
-// ================== ERROR HANDLER ==================
-app.use((err, req, res, next) => {
-  console.error("🔥 Error:", err);
-  res.status(res.statusCode === 200 ? 500 : res.statusCode).json({
-    success: false,
-    message: err.message,
-    stack: process.env.NODE_ENV === "production" ? null : err.stack,
-  });
-});
-
-// ================== HTTP SERVER + SOCKET ==================
+// ================== HTTP SERVER ==================
 const server = http.createServer(app);
 
+// ================== SOCKET.IO ==================
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
-    methods: ["GET", "POST"],
   },
 });
 
-// ===== SOCKET LOGIC (CHAT REAL-TIME & ONLINE STATUS) =====
-const onlineClients = new Map(); // socketId -> { role, userId }
-
 io.on("connection", (socket) => {
-  console.log("🟢 Connected:", socket.id);
+  console.log("🟢 SOCKET CONNECT:", socket.id);
 
-  // 1. Đăng ký Client (Lưu trạng thái Online)
+  // ===== REGISTER =====
   socket.on("register_client", ({ role, userId }) => {
-    onlineClients.set(socket.id, { role, userId });
-    console.log("📌 Register:", socket.id, role, userId);
-    io.emit("online_list", Array.from(onlineClients.values()));
+    if (role === "admin") {
+      socket.join("admins");
+      console.log("👩‍💼 ADMIN JOIN ROOM: admins");
+    }
+
+    if (role === "user" && userId) {
+      socket.join(`user:${userId}`);
+      console.log("👤 USER JOIN ROOM:", userId);
+    }
   });
 
-  // 2. Xử lý tin nhắn từ KHÁCH HÀNG gửi lên
-  socket.on("send_message_from_client", (data) => {
-    console.log(`📩 Khách ${socket.id} nhắn: ${data.text}`);
+  // ===== USER → ADMIN =====
+  socket.on("user_send_message", async ({ userId, text }) => {
+    if (!userId || !text) return;
 
-    // Gắn thêm userId (socket.id) để Admin biết tin nhắn của ai
-    const messageForAdmin = {
-      ...data,
-      userId: socket.id, 
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
+    // 1️⃣ Conversation
+    const conversation = await Conversation.findOneAndUpdate(
+      { user: userId },
+      { lastMessage: text, lastSender: "user" },
+      { upsert: true, new: true }
+    );
 
-    // Gửi sự kiện này cho Admin
-    io.emit("message_to_admin", messageForAdmin);
-  });
-
-  // 3. Xử lý tin nhắn ADMIN trả lời lại
-  socket.on("send_message_from_admin", (data) => {
-    const { userId, text } = data;
-    console.log(`🛡️ Admin trả lời tới ${userId}: ${text}`);
-
-    // Gửi riêng (Private Message) về đúng socketId của khách hàng đó
-    io.to(userId).emit("receive_message_at_client", {
-      sender: "admin",
-      text: text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    // 2️⃣ Save user message
+    const userMessage = await Message.create({
+      conversation: conversation._id,
+      sender: "user",
+      text,
     });
+
+    // 3️⃣ Send to admin
+    io.to("admins").emit("message_to_admin", {
+      conversationId: conversation._id,
+      sender: "user",
+      text,
+      time: userMessage.createdAt,
+      user: { _id: userId, name: "Khách" },
+    });
+
+    // 4️⃣ BOT AUTO REPLY
+    const botReply = getBotReply(conversation, text);
+    if (!botReply) return;
+
+    setTimeout(async () => {
+      const botMessage = await Message.create({
+        conversation: conversation._id,
+        sender: "admin",
+        text: botReply,
+      });
+
+      conversation.lastMessage = botReply;
+      conversation.lastSender = "admin";
+      await conversation.save();
+
+      // 👉 USER
+      io.to(`user:${userId}`).emit("message_to_user", {
+        sender: "admin",
+        text: botReply,
+        time: botMessage.createdAt,
+      });
+
+      // 👉 ADMIN (REALTIME)
+      io.to("admins").emit("message_to_admin", {
+        conversationId: conversation._id,
+        sender: "admin",
+        text: botReply,
+        time: botMessage.createdAt,
+        isBot: true,
+        user: { _id: userId, name: "Bot" },
+      });
+
+      console.log("🤖 BOT REPLIED");
+    }, 800);
   });
 
-  // 4. Ngắt kết nối
-  socket.on("disconnect", () => {
-    console.log("🔴 Disconnected:", socket.id);
-    onlineClients.delete(socket.id);
-    io.emit("online_list", Array.from(onlineClients.values()));
+  // ===== ADMIN → USER =====
+  socket.on("admin_send_message", async ({ conversationId, text }) => {
+    if (!conversationId || !text) return;
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) return;
+
+    const message = await Message.create({
+      conversation: conversationId,
+      sender: "admin",
+      text,
+    });
+
+    conversation.lastMessage = text;
+    conversation.lastSender = "admin";
+    await conversation.save();
+
+    io.to(`user:${conversation.user}`).emit("message_to_user", {
+      sender: "admin",
+      text,
+      time: message.createdAt,
+    });
+
+    io.to("admins").emit("message_to_admin", {
+      conversationId,
+      sender: "admin",
+      text,
+      time: message.createdAt,
+      user: { _id: conversation.user, name: "Khách" },
+    });
   });
 });
 
-// ================== START SERVER (⚠️ CHỈ 1 LISTEN) ==================
+// ================== START ==================
 server.listen(PORT, () => {
   console.log(`🚀 Server + Socket running on port ${PORT}`);
   console.log(`🌐 Upload API ready at: http://localhost:${PORT}/uploads`);
 });
 
-// ================== CRON JOBS ==================
+// ================== CRON ==================
 cron.schedule("0 9 14 2 *", () => {
   axios.post("http://localhost:5000/api/email/send", { event: "valentine" });
-});
-cron.schedule("0 9 8 3 *", () => {
-  axios.post("http://localhost:5000/api/email/send", { event: "women" });
-});
-cron.schedule("0 9 1 1 *", () => {
-  axios.post("http://localhost:5000/api/email/send", { event: "tet" });
-});
-cron.schedule("0 9 24 12 *", () => {
-  axios.post("http://localhost:5000/api/email/send", { event: "noel" });
 });

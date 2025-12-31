@@ -4,7 +4,7 @@ import axios from 'axios';
 const Analytics = ()=>{
   const [stats, setStats] = useState(null);
   useEffect(()=>{ fetch(); },[]);
-  const fetch = async ()=>{ const {data} = await axios.get('/api/admin/dashboard', { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } }); setStats(data.data || data); };
+  const fetch = async ()=>{ const {data} = await axios.get('/api/admin/dashboard', { headers:{ Authorization:`Bearer ${sessionStorage.getItem('token')}` } }); setStats(data.data || data); };
   if(!stats) return <div>Loading...</div>;
   return (
     <div className="p-4">

@@ -1,6 +1,11 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+} from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+
 import AuthProvider from "./context/AuthContext";
 import CartProvider from "./context/CartContext";
 
@@ -8,7 +13,7 @@ import CartProvider from "./context/CartContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Pages
+// ===== USER PAGES =====
 import Home from "./pages/Home";
 import ProductList from "./pages/ProductList";
 import ProductDetail from "./pages/ProductDetail";
@@ -19,29 +24,32 @@ import Profile from "./pages/Profile";
 import ThankYou from "./pages/ThankYou";
 import WaitingVerify from "./pages/WaitingVerify";
 import UserPaymentTracking from "./pages/UserPaymentTracking";
-import OrderDetail from "./pages/OrderDetail"; 
+import OrderDetail from "./pages/OrderDetail";
 
-// Common
+// ===== COMMON =====
 import Contact from "./components/common/Contact";
 import About from "./pages/About";
 
-// Auth
+// ===== AUTH =====
 import FacebookCallback from "./pages/FacebookCallback";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
-// Admin
+// ===== ADMIN =====
 import AdminRoutes from "./routes/AdminRoutes";
 import SendEmailPage from "./pages/admin/SendEmailPage";
-// ✅ IMPORT ADMIN CHAT Ở ĐÂY
-import AdminChat from "./pages/admin/AdminChat"; 
 
 function App() {
   return (
     <GoogleOAuthProvider clientId="113611760953-p18dbq9qh37ad9lnsrjvvu4uako8a9i1.apps.googleusercontent.com">
       <AuthProvider>
         <CartProvider>
-          <Router>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <div className="App">
               {/* 🔔 TOAST */}
               <ToastContainer
@@ -77,11 +85,14 @@ function App() {
                   element={<UserPaymentTracking />}
                 />
 
-                {/* 👉 CHI TIẾT ĐƠN (SAU KHI DUYỆT) */}
+                {/* 👉 CHI TIẾT ĐƠN */}
                 <Route path="/order/:id" element={<OrderDetail />} />
 
                 {/* (OPTIONAL) CHỜ XÁC MINH */}
-                <Route path="/waiting-verify" element={<WaitingVerify />} />
+                <Route
+                  path="/waiting-verify"
+                  element={<WaitingVerify />}
+                />
 
                 {/* ===== AUTH ===== */}
                 <Route
@@ -98,19 +109,18 @@ function App() {
                 />
 
                 {/* ===== ADMIN ===== */}
-                
-                {/* ✅ THÊM ROUTE CHAT VÀO ĐÂY (Đặt trước AdminRoutes) */}
-                <Route path="/admin/chat" element={<AdminChat />} />
 
-                {/* Route gửi email cũ của bạn */}
+                {/* Route gửi email cũ */}
                 <Route
                   path="/admin/email-send"
                   element={<SendEmailPage />}
                 />
 
-                {/* Các route admin khác (Dashboard, Products...) sẽ chạy vào đây */}
-                <Route path="/admin/*" element={<AdminRoutes />} />
-                
+                {/* Các route admin còn lại */}
+                <Route
+                  path="/admin/*"
+                  element={<AdminRoutes />}
+                />
               </Routes>
             </div>
           </Router>

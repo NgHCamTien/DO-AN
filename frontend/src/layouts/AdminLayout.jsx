@@ -21,7 +21,7 @@ const { user, setUser } = useContext(AuthContext);
         { name: "Đánh giá sản phẩm", path: "/admin/reviews", icon: "⭐" },
         { name: "Thông báo", path: "/admin/notifications", icon: "🔔" },
         { name: "Duyệt ảnh thanh toán", path : "/admin/payment-requests", icon: "🖼️" },
-        { name: "Chat Hỗ Trợ", path: "/admin/adminchat", icon: "💬" },
+        { name: "Chat Hỗ Trợ", path: "/admin/chat", icon: "💬" },
       ],
     },
 
@@ -29,26 +29,25 @@ const { user, setUser } = useContext(AuthContext);
       title: "Marketing",
       items: [
         { name: "Gửi Email", path: "/admin/email", icon: "📩" },
-        { name: "Mã giảm giá", path: "/admin/coupons", icon: "🎁", disabled: true }, // 💤 chưa cài
+        { name: "Mẫu Email", path: "/admin/email/templates", icon: "📑" }, 
         {
           name: "Lịch sử email",
           path: "/admin/email/history",
           icon: "🗂️"
         },
-
       ],
     },
 
-    {
-      title: "Hệ thống",
-      items: [
-        { name: "Cấu hình website", path: "/admin/settings", icon: "⚙️", disabled: true },
-        { name: "Phân quyền", path: "/admin/roles", icon: "🔐", disabled: true },
-      ],
-    },
+    // {
+    //   title: "Hệ thống",
+    //   items: [
+    //     // { name: "Cấu hình website", path: "/admin/settings", icon: "⚙️", disabled: true },
+    //     // { name: "Phân quyền", path: "/admin/roles", icon: "🔐", disabled: true },
+    //   ],
+    // },
   ];
 const handleLogout = () => {
-  localStorage.removeItem("userInfo");
+  sessionStorage.removeItem("userInfo");
   setUser(null);
   navigate("/login");
 };
@@ -131,17 +130,16 @@ const handleLogout = () => {
 
         </div>
       </aside>
+      {/* 🔹 NetworkStatus chạy nền – chỉ cho Admin */}
+      {user?.role === "admin" && user?._id && (
+        <NetworkStatus role="admin" userId={user._id} />
+      )}
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT */} 
    <main className="flex-1 ml-60 p-6 overflow-y-auto bg-[#fff]">
 
   {/* 🔹 NETWORK STATUS – LẬP TRÌNH MẠNG */}
-  <div className="mb-4">
-    <NetworkStatus
-      role="admin"
-      userId={user?._id || "admin"}
-    />
-  </div>
+ 
 
   <div className="p-6 rounded-xl shadow-md min-h-[70vh] bg-white border border-[#ecdcd3]">
     <Outlet />

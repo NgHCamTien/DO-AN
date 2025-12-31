@@ -4,9 +4,6 @@ import { AuthContext } from "../context/AuthContext";
 
 import { useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
-
-import { jwtDecode } from "jwt-decode";
-
 const Login = () => {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
@@ -74,7 +71,7 @@ const Login = () => {
             token: data.accessToken,
           };
 
-          localStorage.setItem("userInfo", JSON.stringify(userToSave));
+          sessionStorage.setItem("userInfo", JSON.stringify(userToSave));
           setUser(userToSave);
 
           navigate(userToSave.role === "admin" ? "/admin/dashboard" : "/");

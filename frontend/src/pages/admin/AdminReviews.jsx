@@ -80,6 +80,14 @@ const AdminReviews = () => {
       <h2 className="text-2xl font-bold text-[#4b2c35] mb-6 flex items-center gap-2">
         🌸 Quản lý đánh giá sản phẩm
       </h2>
+          {loading ? (
+          <p className="text-gray-500 italic">
+            ⏳ Đang tải đánh giá sản phẩm...
+          </p>
+        ) : reviews.length === 0 ? (
+          <p className="text-gray-500">Chưa có đánh giá nào.</p>
+        ) : null}
+
 
       {reviews.length === 0 && (
         <p className="text-gray-500">Chưa có đánh giá nào.</p>

@@ -28,7 +28,7 @@ const AdminUsers = () => {
   try {
     setLoading(true);
 
-    const storedUser = JSON.parse(localStorage.getItem("userInfo"));
+    const storedUser = JSON.parse(sessionStorage.getItem("userInfo"));
 
     const token =
       storedUser?.accessToken ||
@@ -78,7 +78,7 @@ const AdminUsers = () => {
  
   // 📌 Cập nhật thông tin user
   const handleUpdate = async () => {
-    const storedUser = JSON.parse(localStorage.getItem("userInfo"));
+    const storedUser = JSON.parse(sessionStorage.getItem("userInfo"));
     const token = storedUser?.accessToken;
 
     if (!token) return alert("Bạn chưa đăng nhập!");
@@ -114,7 +114,7 @@ const AdminUsers = () => {
 
   // Khoá / mở khoá tài khoản
   const toggleActive = async (id) => {
-    const storedUser = JSON.parse(localStorage.getItem("userInfo"));
+    const storedUser = JSON.parse(sessionStorage.getItem("userInfo"));
     const token = storedUser?.accessToken;
 
     if (!token) return alert("Bạn chưa đăng nhập!");
@@ -183,7 +183,7 @@ const AdminUsers = () => {
   const handleDeleteUser = async (id) => {
   if (!window.confirm("Bạn có chắc muốn xoá người dùng này?")) return;
 
-  const storedUser = JSON.parse(localStorage.getItem("userInfo"));
+  const storedUser = JSON.parse(sessionStorage.getItem("userInfo"));
   const token = storedUser?.accessToken;
 
   if (!token) return alert("Bạn chưa đăng nhập!");
@@ -215,7 +215,7 @@ const AdminUsers = () => {
 const handleResetPassword = async (id) => {
   if (!window.confirm("Đặt lại mật khẩu về mặc định (123456)?")) return;
 
-  const storedUser = JSON.parse(localStorage.getItem("userInfo"));
+  const storedUser = JSON.parse(sessionStorage.getItem("userInfo"));
   const token = storedUser?.accessToken;
 
   if (!token) return alert("Bạn chưa đăng nhập!");

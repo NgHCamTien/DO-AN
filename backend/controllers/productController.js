@@ -39,7 +39,6 @@ exports.getProducts = async (req, res) => {
       andConditions.push({
         $or: [
           { name: { $regex: s, $options: "i" } },
-          { shortDescription: { $regex: s, $options: "i" } },
           { description: { $regex: s, $options: "i" } },
           { flowerTypes: { $regex: s, $options: "i" } },
           { tags: { $regex: s, $options: "i" } },
@@ -221,7 +220,6 @@ exports.createProduct = async (req, res) => {
   try {
    const {
   name,
-  shortDescription,
   description,
   price,
   discountPrice,
@@ -298,7 +296,6 @@ exports.createProduct = async (req, res) => {
     const product = new Product({
       sku,
       name,
-      shortDescription,
       description,
       price: Number(price),
       discountPrice: discountPrice ? Number(discountPrice) : null,
@@ -307,6 +304,7 @@ exports.createProduct = async (req, res) => {
       images: imgs,
       category: categoryId,
       categoryName,
+      isActive: true, 
       isFeatured: !!isFeatured,
       flowerTypes: flowerArray,
       season: season || "Quanh năm",
@@ -344,7 +342,6 @@ exports.updateProduct = async (req, res) => {
     const {
       sku,
       name,
-      shortDescription,
       description,
       price,
       discountPrice,
@@ -374,8 +371,6 @@ exports.updateProduct = async (req, res) => {
 
     // Cập nhật các trường khác
     if (typeof name !== "undefined") product.name = name;
-    if (typeof shortDescription !== "undefined")
-      product.shortDescription = shortDescription;
     if (typeof description !== "undefined") product.description = description;
     if (typeof price !== "undefined") product.price = Number(price);
     if (typeof discountPrice !== "undefined") {

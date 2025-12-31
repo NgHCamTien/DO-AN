@@ -19,8 +19,8 @@ const ProductCard = ({ product }) => {
     : `${API_URL}${imagePath.replace(/\\/g, '/')}`;
 
   const handleAddToCart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault();      // 🚫 chặn click Link
+    e.stopPropagation();     // 🚫 chặn nổi bọt
     const cartItem = {
       _id: product._id,
       name: product.name,
@@ -35,12 +35,15 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="relative bg-white rounded-2xl shadow-md overflow-hidden group transition-all duration-500 hover:shadow-xl hover:-translate-y-1">
-
+    <Link
+      to={`/product/${product._id}`}
+      className="block relative bg-white rounded-2xl shadow-md overflow-hidden group transition-all duration-500 hover:shadow-xl hover:-translate-y-1"
+    >
       {/* CARD = FLEX-COLUMN */}
       <div className="flex flex-col h-full">
 
-        <Link to={`/product/${product._id}`} className="block relative overflow-hidden">
+        {/* IMAGE */}
+        <div className="relative overflow-hidden">
           <img
             src={imageSrc || '/placeholder.png'}
             alt={product.name}
@@ -48,14 +51,12 @@ const ProductCard = ({ product }) => {
             onError={(e) => (e.currentTarget.src = '/placeholder.png')}
           />
 
-          {/* Hover */}
+          {/* Hover overlay */}
           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-500">
-            <Link
-              to={`/product/${product._id}`}
-              className="bg-white text-green-700 font-semibold px-4 py-2 rounded-full shadow hover:bg-green-50 transition-all duration-300"
-            >
+            <span className="bg-white text-green-700 font-semibold px-4 py-2 rounded-full shadow">
               Xem chi tiết
-            </Link>
+            </span>
+
             <button
               onClick={handleAddToCart}
               className="bg-green-700 text-white font-semibold px-4 py-2 rounded-full shadow hover:bg-green-600 transition-all duration-300"
@@ -69,51 +70,44 @@ const ProductCard = ({ product }) => {
               -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
             </div>
           )}
-        </Link>
+        </div>
 
         {/* BODY */}
         <div className="p-4 text-center flex flex-col flex-1">
 
-          {/* TÊN (CỐ ĐỊNH CHIỀU CAO) */}
-          <Link to={`/product/${product._id}`}>
-            <h3 className="font-medium text-gray-800 mb-2 line-clamp-2 min-h-[48px]">
-              {product.name}
-            </h3>
-          </Link>
+          {/* TÊN */}
+          <h3 className="font-medium text-gray-800 mb-2 line-clamp-2 min-h-[48px]">
+            {product.name}
+          </h3>
 
-          {/* GIÁ (CỐ ĐỊNH CHIỀU CAO) */}
-        <div className="min-h-[56px] flex flex-col justify-center">
-          {hasDiscount ? (
-            <>
-              {/* Giá gốc phía trên */}
-              <p className="text-sm text-gray-400 line-through">
-                {product.price.toLocaleString('vi-VN')}₫
-              </p>
-
-              {/* Giá giảm phía dưới */}
+          {/* GIÁ */}
+          <div className="min-h-[56px] flex flex-col justify-center">
+            {hasDiscount ? (
+              <>
+                <p className="text-sm text-gray-400 line-through">
+                  {product.price.toLocaleString('vi-VN')}₫
+                </p>
+                <p className="text-lg font-bold text-red-600">
+                  {displayPrice.toLocaleString('vi-VN')}₫
+                </p>
+              </>
+            ) : (
               <p className="text-lg font-bold text-red-600">
                 {displayPrice.toLocaleString('vi-VN')}₫
               </p>
-            </>
-          ) : (
-            <p className="text-lg font-bold text-red-600">
-              {displayPrice.toLocaleString('vi-VN')}₫
-            </p>
-          )}
-        </div>
+            )}
+          </div>
 
-
-          {/* NÚT THÊM GIỎ (ĐẨY XUỐNG CUỐI) */}
+          {/* NÚT THÊM GIỎ DƯỚI */}
           <button
             onClick={handleAddToCart}
             className="w-full bg-[#e86b84] text-white py-2 px-4 rounded-lg hover:bg-[#d85a75] transition-colors duration-300 shadow-sm hover:shadow-md font-medium mt-auto"
           >
             🛒 Thêm vào giỏ
           </button>
-
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

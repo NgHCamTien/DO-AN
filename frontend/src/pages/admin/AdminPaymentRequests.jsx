@@ -1,40 +1,53 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 
 const API_URL = "http://localhost:5000/api/admin/payment-requests";
 
+const STATUS_LABEL = {
+  PENDING: "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Đã từ chối",
+};
+
 const AdminPaymentRequests = () => {
   const { user } = useContext(AuthContext);
+
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [previewImage, setPreviewImage] = useState(null);
   const [rejectingId, setRejectingId] = useState(null);
   const [adminNote, setAdminNote] = useState("");
 
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line
-  }, []);
-
-  const fetchData = async () => {
+  // ✅ FIX warning useEffect bằng useCallback
+  const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
+
       const res = await axios.get(API_URL, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       });
+
       setList(res.data.data || []);
     } catch (err) {
-      toast.error("Không tải được danh sách thanh toán");
+      console.error(err);
+      toast.error("Không thể tải danh sách yêu cầu thanh toán");
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.token]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const approve = async (id) => {
-    if (!window.confirm("Duyệt thanh toán này?")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn duyệt thanh toán này không?"))
+      return;
 
     try {
       await axios.put(
@@ -46,16 +59,17 @@ const AdminPaymentRequests = () => {
           },
         }
       );
-      toast.success("Đã duyệt & tạo đơn hàng");
+
+      toast.success("✅ Đã duyệt thanh toán và tạo đơn hàng");
       fetchData();
     } catch (err) {
-      toast.error("Duyệt thất bại");
+      toast.error("❌ Duyệt thanh toán thất bại");
     }
   };
 
   const reject = async () => {
-    if (!adminNote) {
-      toast.error("Vui lòng nhập lý do");
+    if (!adminNote.trim()) {
+      toast.error("Vui lòng nhập lý do từ chối");
       return;
     }
 
@@ -69,19 +83,22 @@ const AdminPaymentRequests = () => {
           },
         }
       );
-      toast.success("Đã từ chối thanh toán");
+
+      toast.success("🚫 Đã từ chối thanh toán");
       setRejectingId(null);
       setAdminNote("");
       fetchData();
     } catch (err) {
-      toast.error("Từ chối thất bại");
+      toast.error("❌ Từ chối thanh toán thất bại");
     }
   };
 
-  if (loading) return <div className="p-6">Đang tải...</div>;
+  if (loading) {
+    return <div className="p-6">⏳ Đang tải danh sách thanh toán...</div>;
+  }
 
   return (
-    <div>
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">
         💳 Duyệt thanh toán QR
       </h1>
@@ -93,9 +110,9 @@ const AdminPaymentRequests = () => {
               <th className="p-3 text-left">Khách hàng</th>
               <th className="p-3">Ngày</th>
               <th className="p-3">Tổng tiền</th>
-              <th className="p-3">Ảnh QR</th>
+              <th className="p-3">Ảnh chuyển khoản</th>
               <th className="p-3">Trạng thái</th>
-              <th className="p-3">Hành động</th>
+              <th className="p-3">Thao tác</th>
             </tr>
           </thead>
 
@@ -103,7 +120,9 @@ const AdminPaymentRequests = () => {
             {list.map((item) => (
               <tr key={item._id} className="border-t">
                 <td className="p-3">
-                  <div className="font-medium">{item.user?.name}</div>
+                  <div className="font-medium">
+                    {item.user?.name || "Không xác định"}
+                  </div>
                   <div className="text-gray-500 text-xs">
                     {item.user?.email}
                   </div>
@@ -114,10 +133,7 @@ const AdminPaymentRequests = () => {
                 </td>
 
                 <td className="p-3 font-medium">
-                  {item.orderSnapshot?.totalPrice?.toLocaleString(
-                    "vi-VN"
-                  )}
-                  ₫
+                  {item.orderSnapshot?.totalPrice?.toLocaleString("vi-VN")}₫
                 </td>
 
                 <td className="p-3">
@@ -143,33 +159,35 @@ const AdminPaymentRequests = () => {
                         : "bg-red-100 text-red-700"
                     }`}
                   >
-                    {item.status}
+                    {STATUS_LABEL[item.status]}
                   </span>
                 </td>
 
-                <td className="p-3 space-x-2">
-                  {item.status === "PENDING" && (
-                    <>
-                      <button
-                        onClick={() => approve(item._id)}
-                        className="px-3 py-1 bg-green-500 text-white rounded text-xs"
-                      >
-                        Duyệt
-                      </button>
-                      <button
-                        onClick={() => setRejectingId(item._id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded text-xs"
-                      >
-                        Từ chối
-                      </button>
-                    </>
-                  )}
+                <td className="p-3">
+                  <div className="flex gap-2">
+                    {item.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={() => approve(item._id)}
+                          className="px-3 py-1 bg-green-500 text-white rounded text-xs"
+                        >
+                          Duyệt
+                        </button>
+                        <button
+                          onClick={() => setRejectingId(item._id)}
+                          className="px-3 py-1 bg-red-500 text-white rounded text-xs"
+                        >
+                          Từ chối
+                        </button>
+                      </>
+                    )}
 
-                  {item.status === "APPROVED" && item.order && (
-                    <span className="text-green-600 text-xs">
-                      Đã tạo đơn
-                    </span>
-                  )}
+                    {item.status === "APPROVED" && item.order && (
+                      <span className="text-green-600 text-xs">
+                        Đã tạo đơn
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -177,7 +195,7 @@ const AdminPaymentRequests = () => {
         </table>
       </div>
 
-      {/* MODAL XEM ẢNH */}
+      {/* ===== MODAL XEM ẢNH ===== */}
       {previewImage && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -191,12 +209,12 @@ const AdminPaymentRequests = () => {
         </div>
       )}
 
-      {/* MODAL TỪ CHỐI */}
+      {/* ===== MODAL TỪ CHỐI ===== */}
       {rejectingId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow w-96">
             <h3 className="font-semibold mb-2">
-              Lý do từ chối
+              Lý do từ chối thanh toán
             </h3>
             <textarea
               className="w-full border p-2 rounded"

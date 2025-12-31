@@ -31,7 +31,7 @@ const AdminProducts = () => {
     if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này không?")) return;
     try {
       setDeleteLoading(id);
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      const userInfo = JSON.parse(sessionStorage.getItem("userInfo"));
       if (!userInfo?.token) {
         alert("Phiên đăng nhập đã hết hạn.");
         logout();
