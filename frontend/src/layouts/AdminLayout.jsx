@@ -131,7 +131,7 @@ const handleLogout = () => {
         </div>
       </aside>
       {/* 🔹 NetworkStatus chạy nền – chỉ cho Admin */}
-      {user?.role === "admin" && user?._id && (
+      {user?.role === "ADMIN" && user?._id && (
         <NetworkStatus role="admin" userId={user._id} />
       )}
 
