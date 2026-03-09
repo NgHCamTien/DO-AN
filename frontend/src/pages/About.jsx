@@ -9,7 +9,7 @@ const About = () => {
     page: {
       fontFamily: "'Playfair Display', 'Times New Roman', serif", // Font có chân cho sang trọng
       color: '#4a4a4a',
-      backgroundColor: '#fff', // Nền trắng
+      backgroundColor: '', // Nền trắng
       minHeight: '100vh',
     },
     container: {
